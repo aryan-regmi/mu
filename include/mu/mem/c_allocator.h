@@ -1,0 +1,26 @@
+#ifndef MU_C_ALLOCATOR_H
+#define MU_C_ALLOCATOR_H
+
+#include "mu/mem/allocator.h" // Allocator
+#include "mu/primitives.h"    // usize, u8
+
+#include <cstdlib> // malloc, free
+
+namespace mu::mem {
+using namespace primitives;
+
+class CAllocator : public Allocator {
+private:
+  virtual auto alloc_fn(void* /*ctx*/, usize byte_size,
+                        u8 align) -> void* override {
+    return std::malloc(byte_size + align);
+  }
+
+  virtual auto free_fn(void* /*ctx*/, void* ptr) -> void override {
+    std::free(ptr);
+  }
+};
+
+} // namespace mu::mem
+
+#endif // !MU_C_ALLOCATOR_H

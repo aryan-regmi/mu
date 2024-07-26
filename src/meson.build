@@ -1,3 +1,3 @@
 sources += files([
-  # 'tst.cpp',
+  'mem/allocator.cpp',
 ])

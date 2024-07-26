@@ -1,15 +1,15 @@
-#include "mu/mem.h"
+#include "mu/mem/allocator.h"
+#include "mu/mem/c_allocator.h"
 #include "mu/primitives.h"
 #include <cstdio>
 
 int main(void) {
   using namespace mu::primitives;
-  const_cstr num = "hi";
-  printf("Hello World! %s", num);
 
-  mu::mem::Allocator allocator;
-  int*               val = allocator.create<int>().unwrap();
+  mu::mem::CAllocator allocator;
+  int*                val = allocator.create<int>();
   printf("Tst: %d", *val);
+  allocator.destroy(val);
 
   return 0;
 }
