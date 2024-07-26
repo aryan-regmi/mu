@@ -4,6 +4,7 @@
 #include "mu/primitives.h" // usize, u8
 #include "mu/slice.h"      // Slice
 
+#include <cstddef>
 #include <cstdint>   // SIZE_MAX
 #include <exception> // exception
 
@@ -27,6 +28,15 @@ private:
   AllocatorError type;
 };
 
+// TODO: Impl
+template <typename T> struct NonNull {
+  NonNull(T* ptr, u8 offset) : ptr{ptr}, offset{offset} {}
+  NonNull(std::nullptr_t ptr) : ptr{ptr}, offset{0} {}
+
+  T* ptr;
+  u8 offset;
+};
+
 class Allocator {
 public:
   Allocator()          = default;
@@ -34,9 +44,12 @@ public:
 
   /// Allocates `byte_size` bytes of memory aligned to `align`.
   auto                       rawAlloc(usize byte_size, u8 align) -> void*;
+  // auto                       rawAlloc(usize byte_size, u8 align) ->
+  // NonNull<u8>;
 
   /// Frees the memory allocated for `ptr`.
-  auto                       rawFree(void* ptr) noexcept -> void;
+  auto                       rawFree(void* ptr, u8 align) noexcept -> void;
+  // auto                       rawFree(NonNull<u8> ptr) noexcept -> void;
 
   /// Allocates and returns memory for a single item of type `T`.
   ///
@@ -71,7 +84,7 @@ public:
     if (sizeof(T) == 0) {
       return;
     }
-    this->rawFree(ptr);
+    this->rawFree(ptr, alignof(T));
   }
 
   /// Frees the memory allocated for the `slice`.
@@ -79,7 +92,7 @@ public:
     if ((sizeof(T) == 0) || (slice.len() == 0)) {
       return;
     }
-    this->rawFree(slice.ptr());
+    this->rawFree(slice.ptr(), slice.align());
   }
 
 protected:
@@ -90,18 +103,18 @@ private:
   virtual auto free_fn(void* ctx, void* ptr) -> void         = 0;
 
   template <typename T>
-  auto allocCustom(usize len, u8 align = alignof(T)) -> Slice<T> {
+  constexpr auto allocCustom(usize len, u8 align = alignof(T)) -> Slice<T> {
     if ((sizeof(T) == 0) || (len == 0)) {
       return Slice(reinterpret_cast<T*>(reinterpret_cast<intptr_t*>(
                        reinterpret_cast<intptr_t>(INTMAX_MAX))),
-                   len);
+                   len, align);
     }
 
     T* ptr = static_cast<T*>(this->rawAlloc(sizeof(T) * len, align));
     if (ptr == nullptr) {
       throw AllocatorException(AllocatorError::OutOfMemory);
     }
-    return Slice(ptr, len);
+    return Slice(ptr, len, align);
   }
 };
 
