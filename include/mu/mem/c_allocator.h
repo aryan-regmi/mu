@@ -11,11 +11,12 @@ using namespace primitives;
 
 class CAllocator : public Allocator {
 private:
-  virtual auto alloc_fn(void* /*ctx*/, usize byte_size) -> void* override {
-    return std::malloc(byte_size);
+  virtual auto alloc_fn(void* /*ctx*/,
+                        usize byte_size) noexcept -> void* override {
+    return std::calloc(1, byte_size);
   }
 
-  virtual auto free_fn(void* /*ctx*/, void* ptr) -> void override {
+  virtual auto free_fn(void* /*ctx*/, void* ptr) noexcept -> void override {
     std::free(ptr);
   }
 };

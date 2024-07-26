@@ -99,8 +99,8 @@ protected:
   void* ctx = nullptr;
 
 private:
-  virtual auto alloc_fn(void* ctx, usize byte_size) -> void* = 0;
-  virtual auto free_fn(void* ctx, void* ptr) -> void         = 0;
+  virtual auto alloc_fn(void* ctx, usize byte_size) noexcept -> void* = 0;
+  virtual auto free_fn(void* ctx, void* ptr) noexcept -> void         = 0;
 
   template <typename T>
   constexpr auto allocCustom(usize len, u8 align = alignof(T)) -> Slice<T> {
