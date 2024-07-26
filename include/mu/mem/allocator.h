@@ -3,10 +3,8 @@
 
 #include "mu/primitives.h" // usize, u8
 #include "mu/slice.h"      // Slice
-
-#include <cstddef>
-#include <cstdint>   // SIZE_MAX
-#include <exception> // exception
+#include <cstdint>         // SIZE_MAX
+#include <exception>       // exception
 
 namespace mu::mem {
 using namespace primitives;
@@ -26,15 +24,6 @@ public:
 
 private:
   AllocatorError type;
-};
-
-// TODO: Impl
-template <typename T> struct NonNull {
-  NonNull(T* ptr, u8 offset) : ptr{ptr}, offset{offset} {}
-  NonNull(std::nullptr_t ptr) : ptr{ptr}, offset{0} {}
-
-  T* ptr;
-  u8 offset;
 };
 
 class Allocator {

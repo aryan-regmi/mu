@@ -19,7 +19,6 @@ auto AllocatorException::what() const throw() -> const_cstr {
   }
 }
 
-// FIXME: Check that `align` is a power of 2!
 // NOTE: Impl from:
 // https://johanmabille.github.io/blog/2014/12/06/aligned-memory-allocator/
 auto Allocator::rawAlloc(usize byte_size, u8 align) -> void* {
