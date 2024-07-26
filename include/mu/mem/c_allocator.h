@@ -11,9 +11,8 @@ using namespace primitives;
 
 class CAllocator : public Allocator {
 private:
-  virtual auto alloc_fn(void* /*ctx*/, usize byte_size,
-                        u8 align) -> void* override {
-    return std::malloc(byte_size + align);
+  virtual auto alloc_fn(void* /*ctx*/, usize byte_size) -> void* override {
+    return std::malloc(byte_size);
   }
 
   virtual auto free_fn(void* /*ctx*/, void* ptr) -> void override {

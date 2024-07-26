@@ -8,6 +8,7 @@ int main(void) {
 
   mu::mem::CAllocator allocator;
   int*                val = allocator.create<int>();
+  *val                    = 2;
   printf("Tst: %d", *val);
   allocator.destroy(val);
 
