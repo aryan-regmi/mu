@@ -5,7 +5,6 @@
 #include <cassert>         // assert
 #include <concepts>        // same_as
 #include <cstdio>          // stdout, fprintf
-#include <type_traits>
 
 namespace mu {
 using namespace primitives;

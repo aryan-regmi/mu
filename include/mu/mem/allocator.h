@@ -34,12 +34,9 @@ public:
 
   /// Allocates `byte_size` bytes of memory aligned to `align`.
   auto                       rawAlloc(usize byte_size, u8 align) -> void*;
-  // auto                       rawAlloc(usize byte_size, u8 align) ->
-  // NonNull<u8>;
 
   /// Frees the memory allocated for `ptr`.
   auto                       rawFree(void* ptr, u8 align) noexcept -> void;
-  // auto                       rawFree(NonNull<u8> ptr) noexcept -> void;
 
   /// Allocates and returns memory for a single item of type `T`.
   ///

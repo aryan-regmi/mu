@@ -3,7 +3,6 @@
 
 #include "mu/common.h"     // IndexOutOfBounds
 #include "mu/debuggable.h" // Debuggable, Debug
-#include "mu/panic.h"
 #include "mu/primitives.h" // usize, u8< u64
 
 namespace mu {
