@@ -2,6 +2,8 @@
 #define MU_SLICE_H
 
 #include "mu/common.h"     // IndexOutOfBounds
+#include "mu/debuggable.h" // Debuggable, Debug
+#include "mu/panic.h"
 #include "mu/primitives.h" // usize, u8< u64
 
 namespace mu {
@@ -10,8 +12,9 @@ using namespace primitives;
 /// A dynamically-sized view into a contiguous sequence, [T]. Contiguous here
 /// means that elements are laid out so that every element is the same distance
 /// from its neighbors.
-template <typename T> class Slice {
+template <typename T> class Slice : public Debug<Slice<T>> {
 public:
+  explicit Slice() = default;
   explicit Slice(T* ptr, usize len, u8 align = alignof(T)) noexcept
       : ptr_{ptr}, len_{len}, align_{align} {}
 
@@ -30,6 +33,13 @@ public:
       throw common::IndexOutOfBounds(idx, this->len());
     }
     return *reinterpret_cast<T*>(reinterpret_cast<u8*>(this->ptr_) + idx);
+  }
+
+  /// Debug implementation.
+  auto writeToBuf(u8* /*buf*/) const -> void {
+    if (Debuggable<T>) {
+      // TODO: Call T debug!!, write Slice stuff
+    }
   }
 
 private:

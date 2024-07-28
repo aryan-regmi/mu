@@ -1,6 +1,7 @@
 #ifndef MU_ALLOCATOR_H
 #define MU_ALLOCATOR_H
 
+#include "mu/panic.h"      // MU_PANIC
 #include "mu/primitives.h" // usize, u8
 #include "mu/slice.h"      // Slice
 #include <cstdint>         // SIZE_MAX
@@ -88,8 +89,14 @@ protected:
   void* ctx = nullptr;
 
 private:
-  virtual auto alloc_fn(void* ctx, usize byte_size) noexcept -> void* = 0;
-  virtual auto free_fn(void* ctx, void* ptr) noexcept -> void         = 0;
+  virtual auto alloc_fn(void* /*ctx*/, usize /*byte_size*/) noexcept -> void* {
+    MU_PANIC("`alloc_fn` not implemented!");
+    return nullptr;
+  }
+
+  virtual auto free_fn(void* /*ctx*/, void* /*ptr*/) noexcept -> void {
+    MU_PANIC("`free_fn` not implemented!");
+  };
 
   template <typename T>
   constexpr auto allocCustom(usize len, u8 align = alignof(T)) -> Slice<T> {
