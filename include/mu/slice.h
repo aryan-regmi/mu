@@ -6,10 +6,8 @@
 #include <iostream>
 #include <ostream>
 #include <source_location>
-#include <type_traits>
 
 namespace mu {
-using namespace primitives;
 
 namespace internal::helper {
 template <typename T>

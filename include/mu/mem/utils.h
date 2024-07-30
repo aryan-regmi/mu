@@ -6,7 +6,6 @@
 #include <array>
 
 namespace mu::mem {
-using namespace primitives;
 // NOTE: Impl from:
 // https://mklimenko.github.io/english/2018/08/22/robust-endian-swap/
 //

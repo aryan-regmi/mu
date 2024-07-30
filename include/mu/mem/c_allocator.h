@@ -7,7 +7,6 @@
 #include <cstdlib> // malloc, free
 
 namespace mu::mem {
-using namespace primitives;
 
 class CAllocator : public Allocator {
 public:

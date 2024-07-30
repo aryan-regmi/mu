@@ -3,10 +3,8 @@
 
 #include <cstddef> // size_t
 #include <cstdint> // uint_least[8-64]_t, int_least[8-64]_t
-#include <utility> // move
-#include <variant> // variant
 
-namespace mu::primitives {
+namespace mu {
 
 typedef size_t         usize;
 typedef uint_least8_t  u8;
@@ -25,6 +23,6 @@ typedef double         f64;
 typedef char*          cstr;
 typedef const char*    const_cstr;
 
-} // namespace mu::primitives
+} // namespace mu
 
 #endif // !MU_MEM_H

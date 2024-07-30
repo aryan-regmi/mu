@@ -11,7 +11,6 @@
 // TODO: Remove `ctx` + make `alloc_fn` and `free_fn` abstract, virtual funcs
 // (virtual `func` = 0;)
 namespace mu::mem {
-using namespace primitives;
 
 /// Possible `Allocator` errors.
 enum class AllocatorError {

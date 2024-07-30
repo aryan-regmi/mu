@@ -12,7 +12,6 @@
 //
 // TODO: Add concept to check for `format` and `write_fn` funcs!
 namespace mu::io {
-using namespace primitives;
 
 class Writer {
 public:

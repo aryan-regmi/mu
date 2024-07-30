@@ -1,14 +1,12 @@
 #ifndef MU_DEBUGGABLE_H
 #define MU_DEBUGGABLE_H
 
-#include "mu/io/writer.h"
-#include "mu/primitives.h" // u8
-#include <cassert>         // assert
-#include <concepts>        // same_as
-#include <cstdio>          // stdout, fprintf
+#include "mu/io/writer.h" // Writer
+#include <cassert>        // assert
+#include <concepts>       // same_as
+#include <cstdio>         // stdout, fprintf
 
 namespace mu {
-using namespace primitives;
 
 template <typename T>
 concept Debuggable = requires(const T self, io::Writer& writer) {

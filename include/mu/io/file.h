@@ -7,7 +7,6 @@
 #include <cstdio>
 
 namespace mu::io {
-using namespace primitives;
 
 class File : Writer {
 public:

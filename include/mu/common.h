@@ -5,7 +5,6 @@
 #include <exception>       // exception
 
 namespace mu::common {
-using namespace mu::primitives;
 
 /// Exception type thrown by `Allocator` methods.
 class IndexOutOfBounds : std::exception {
