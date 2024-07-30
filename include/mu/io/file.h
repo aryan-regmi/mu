@@ -5,9 +5,9 @@
 #include "mu/primitives.h" // const_cstr, usize, u8
 #include "mu/slice.h"      // Slice
 #include <cassert>         // assert
-#include <cstdarg>         // va_list, va_start, va_end
-#include <cstdio>          // fprintf, fwrite
-#include <exception>
+#include <cstdarg>         // va_list
+#include <cstdio>          // vfprintf, fwrite
+#include <exception>       // exception
 
 namespace mu::io {
 
@@ -38,6 +38,8 @@ public:
 
   explicit File() = default;
 
+  explicit File(FILE* file) { this->file = file; }
+
   explicit File(const_cstr filename, Mode mode) {
     std::FILE* file = std::fopen(filename, getFileMode(mode));
     if (file == nullptr) {
@@ -49,8 +51,12 @@ public:
   }
 
   ~File() {
-    int closed = std::fclose(this->file);
-    assert(closed == 0);
+    if ((this->file != stdout) && (this->file != stderr)) {
+      if (this->file != nullptr) {
+        int closed = std::fclose(this->file);
+        assert((closed == 0) || (closed == EOF));
+      }
+    }
   }
 
   /// Write the buffer to this file, returning how many bytes were written.
@@ -58,14 +64,12 @@ public:
     return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), this->file);
   }
 
-  /// Writes a formatted string to this file.
-  auto format(const_cstr fmt, ...) -> void override {
-    std::va_list args;
-    va_start(args, fmt);
-    usize written = std::fprintf(this->file, fmt, args);
+  auto formatV(const_cstr fmt, va_list args) -> void override {
+    usize written = std::vfprintf(this->file, fmt, args);
     assert(written != 0);
-    va_end(args);
-  };
+  }
+
+  auto toRaw() const -> std::FILE* { return this->file; }
 
 private:
   std::FILE*  file = nullptr;

@@ -5,7 +5,6 @@
 #include "mu/primitives.h" // usize, u8< u64
 #include <iostream>
 #include <ostream>
-#include <source_location>
 
 namespace mu {
 
@@ -52,24 +51,21 @@ public:
   }
 
   /// Print the slice to `stderr`.
-  auto debug(const std::source_location loc =
-                 std::source_location::current()) const -> void {
-    std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
-              << loc.column() << "] = ";
+  auto debug() const -> void {
     std::cout << "Slice {" << std::endl;
     std::cout << "\tptr: " << this->ptr_ << std::endl;
     std::cout << "\tlen: " << this->len_ << std::endl;
-    std::cout << "\telements: [";
+    std::cout << "\telements: [ ";
     for (usize i = 0; i < this->len_; i++) {
       if constexpr (internal::helper::HasDebugFn<T>) {
+        // TODO: Add special rule for nested Slice
         T& val = *(this->ptr_ + i);
         val.debug();
-        // std::cout << " " << val.debug();
       } else {
         std::cout << " " << *(this->ptr_ + i);
       }
       if (i < this->len_ - 1) {
-        std::cout << ",";
+        std::cout << ", ";
       }
     }
     std::cout << " ]" << std::endl;

@@ -7,7 +7,6 @@
 #include <cstdlib>         // abort
 
 namespace mu {
-using namespace primitives;
 
 // TODO: Add ability to change panic handler
 

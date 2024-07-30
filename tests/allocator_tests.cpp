@@ -1,10 +1,13 @@
 #include "mu/common.h"
 #include "mu/debuggable.h"
+#include "mu/io/writer.h"
 #include "mu/mem/c_allocator.h"
 #include "mu/primitives.h"
 #include "mu/slice.h"
 #include <cassert>
 #include <cstdio>
+
+using namespace mu;
 
 struct Tst {
   int  x;
@@ -13,9 +16,17 @@ struct Tst {
   bool b;
 };
 
+struct Dbgl : Debug<Dbgl> {
+  auto writeFmt(io::Writer& writer) const -> void {
+    writer.format("Dbgl { val = %d }", this->val);
+  }
+
+  static constexpr const usize NUM = 42;
+  int                          val = NUM;
+};
+
 int main(void) {
-  using namespace mu;
-  mu::mem::CAllocator allocator{};
+  mem::CAllocator allocator{};
 
   {
     Tst* val     = allocator.create<Tst>();
@@ -42,6 +53,9 @@ int main(void) {
     u8*          offset    = aligned - alignment;
     u8*          alloced   = aligned - *offset;
     assert((reinterpret_cast<u8*>(val.ptr()) - alloced) == alignment);
+
+    auto xxx = Dbgl{};
+    dbg(xxx);
 
     // Testing slice
     try {

@@ -1,6 +1,7 @@
 #ifndef MU_DEBUGGABLE_H
 #define MU_DEBUGGABLE_H
 
+#include "mu/io/file.h"
 #include "mu/io/writer.h" // Writer
 #include "mu/primitives.h"
 #include <cassert>  // assert
@@ -12,24 +13,25 @@
 namespace mu {
 
 template <typename T>
-concept HasDebugFn = requires(const T self, const std::source_location loc) {
-  { self.debug(loc) } -> std::same_as<void>;
+concept HasDebugFn = requires(const T self) {
+  { self.debug() } -> std::same_as<void>;
 };
 
 template <typename T>
 concept Debuggable = requires(const T self, io::Writer& writer) {
-  { self.write(writer) } -> std::same_as<void>;
+  { self.writeFmt(writer) } -> std::same_as<void>;
 };
 
 // template <Debuggable Context> struct Debug {
 template <typename Context> struct Debug {
-  auto debug(const std::source_location loc =
-                 std::source_location::current()) const -> void
+  auto debug() const -> void
     requires(Debuggable<Context>)
   {
-    // TODO: Impl!
-    //  - Create File(stdout) writer
-    //  - Write the self.write() value to that!
+    const Context*       self      = static_cast<const Context*>(this);
+    FILE*                file      = stdout;
+    io::File             writer    = io::File(file);
+    io::ThreadSafeWriter ts_writer = io::ThreadSafeWriter(io::File(file));
+    self->writeFmt(ts_writer);
   }
 };
 
@@ -38,7 +40,10 @@ auto dbg(T                    val,
          std::source_location loc = std::source_location::current()) -> void
   requires(HasDebugFn<T>)
 {
-  val.debug(loc);
+  std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
+            << loc.column() << "] = ";
+  val.debug();
+  std::cout << std::endl;
 }
 
 // TODO: Put impls in cpp file
@@ -48,6 +53,13 @@ auto dbg(u8                   val,
   std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
             << loc.column() << "] = ";
   std::cout << static_cast<int>(val) << std::endl;
+}
+
+auto dbg(u8*                  str,
+         std::source_location loc = std::source_location::current()) -> void {
+  std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
+            << loc.column() << "] = ";
+  std::cout << "\"" << str << "\"" << std::endl;
 }
 
 auto dbg(const_cstr           str,

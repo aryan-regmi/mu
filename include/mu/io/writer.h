@@ -6,48 +6,33 @@
 #include "mu/slice.h"      // Slice
 #include <bit>             // endian::native
 #include <cassert>         // assert
+#include <cstdarg>         // va_list, va_start, va_end
 #include <cstdio>          // FILE, fprintf, snprintf
-
-// TODO: Make thread-safe writer:
-//  - Same idea as thread-safe allocator
-//  - Just wrap the `write` and `format` functions in locks
-//  ```
-//   class ThreadSafeWriter {
-//    public:
-//      auto write(Slice<u8> buf) -> usize {
-//        this->mutex.lock();
-//        this->writer.write(buf);
-//        this->mutex.unlock();
-//      }
-//      auto format(const_cstr fmt, ...) -> void {
-//        this->mutex.lock();
-//        this->writer.fmt(fmt, ...);
-//        this->mutex.unlock();
-//      }
-//    private:
-//      Mutex mutex;
-//      Writer& writer;
-//   }
-//  ```
-// https://stackoverflow.com/questions/357307/how-to-call-a-parent-class-function-from-derived-class-function
+#include <mutex>           // mutex, lock_guard
 
 namespace mu::io {
 
 class Writer {
 public:
-  Writer()                                                           = default;
-  virtual ~Writer()                                                  = default;
+  Writer()                                                     = default;
+  virtual ~Writer()                                            = default;
 
   /// Write the buffer into this writer, returning how many bytes were written.
-  [[nodiscard]] virtual auto write(Slice<u8> /*buf*/) -> usize       = 0;
+  [[nodiscard]] virtual auto write(Slice<u8> /*buf*/) -> usize = 0;
 
-  // TODO: Make this a parameter pack
-  //
+  /// Write a formatted string into the writer.
+  virtual auto               formatV(const_cstr fmt, va_list args) -> void = 0;
+
   /// Writes a formatted string into this writer.
-  virtual auto               format(const_cstr /*fmt*/, ...) -> void = 0;
+  auto                       format(const_cstr fmt, ...) -> void {
+    va_list args;
+    va_start(args, fmt);
+    this->formatV(fmt, args);
+    va_end(args);
+  }
 
   /// Attempts to write an entire buffer into this writer.
-  auto                       writeAll(Slice<u8> buf) -> void {
+  auto writeAll(Slice<u8> buf) -> void {
     usize idx = 0;
     while (idx != buf.len()) {
       idx += this->write(buf);
@@ -72,6 +57,35 @@ public:
       mem::swapEndian<T>(obj);
       this->writeObject(obj);
     }
+  }
+};
+
+template <typename T>
+concept Writeable =
+    requires(T self, Slice<u8> buf, const_cstr fmt, va_list args) {
+      { self.write(buf) } -> std::same_as<usize>;
+      { self.formatV(fmt, args) } -> std::same_as<void>;
+    };
+
+template <Writeable T> class ThreadSafeWriter : public Writer {
+public:
+  ~ThreadSafeWriter() = default;
+
+  explicit ThreadSafeWriter(T writer) : writer{writer} {}
+
+  auto write(Slice<u8> buf) -> usize override {
+    const std::lock_guard<std::mutex> lock(this->mutex);
+    usize                             written = this->writer.write(buf);
+    return written;
+  }
+
+private:
+  std::mutex mutex;
+  T          writer;
+
+  auto       formatV(const_cstr fmt, va_list args) -> void override {
+    const std::lock_guard<std::mutex> lock(this->mutex);
+    this->writer.formatV(fmt, args);
   }
 };
 
