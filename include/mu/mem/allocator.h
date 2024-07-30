@@ -6,10 +6,9 @@
 #include <cstdint>         // SIZE_MAX
 #include <exception>       // exception
 
-// TODO: Make thread safe allocator? (Impl, not interface)
-//
-// TODO: Remove `ctx` + make `alloc_fn` and `free_fn` abstract, virtual funcs
-// (virtual `func` = 0;)
+// TODO: Add thread safe allocator:
+//  https://github.com/ziglang/zig/blob/master/lib/std/heap/ThreadSafeAllocator.zig
+
 namespace mu::mem {
 
 /// Possible `Allocator` errors.

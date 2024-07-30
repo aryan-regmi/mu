@@ -8,9 +8,29 @@
 #include <cassert>         // assert
 #include <cstdio>          // FILE, fprintf, snprintf
 
-// TODO: Make thread safe version!
-//
-// TODO: Add concept to check for `format` and `write_fn` funcs!
+// TODO: Make thread-safe writer:
+//  - Same idea as thread-safe allocator
+//  - Just wrap the `write` and `format` functions in locks
+//  ```
+//   class ThreadSafeWriter {
+//    public:
+//      auto write(Slice<u8> buf) -> usize {
+//        this->mutex.lock();
+//        this->writer.write(buf);
+//        this->mutex.unlock();
+//      }
+//      auto format(const_cstr fmt, ...) -> void {
+//        this->mutex.lock();
+//        this->writer.fmt(fmt, ...);
+//        this->mutex.unlock();
+//      }
+//    private:
+//      Mutex mutex;
+//      Writer& writer;
+//   }
+//  ```
+// https://stackoverflow.com/questions/357307/how-to-call-a-parent-class-function-from-derived-class-function
+
 namespace mu::io {
 
 class Writer {
@@ -21,6 +41,8 @@ public:
   /// Write the buffer into this writer, returning how many bytes were written.
   [[nodiscard]] virtual auto write(Slice<u8> /*buf*/) -> usize       = 0;
 
+  // TODO: Make this a parameter pack
+  //
   /// Writes a formatted string into this writer.
   virtual auto               format(const_cstr /*fmt*/, ...) -> void = 0;
 

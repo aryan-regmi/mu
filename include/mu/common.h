@@ -6,7 +6,7 @@
 
 namespace mu::common {
 
-/// Exception type thrown by `Allocator` methods.
+/// Index out of bounds exception.
 class IndexOutOfBounds : std::exception {
 public:
   explicit IndexOutOfBounds(usize idx, usize len) : idx{idx}, len{len} {}
