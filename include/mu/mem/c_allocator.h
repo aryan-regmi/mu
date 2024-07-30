@@ -19,12 +19,11 @@ public:
   CAllocator& operator=(CAllocator&& other)      = default;
 
 private:
-  virtual auto alloc_fn(void* /*ctx*/,
-                        usize byte_size) noexcept -> void* override {
+  auto alloc_fn(void* /*ctx*/, usize byte_size) noexcept -> void* override {
     return std::calloc(1, byte_size);
   }
 
-  virtual auto free_fn(void* /*ctx*/, void* ptr) noexcept -> void override {
+  auto free_fn(void* /*ctx*/, void* ptr) noexcept -> void override {
     std::free(ptr);
   }
 };

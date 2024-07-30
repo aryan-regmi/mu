@@ -2,15 +2,15 @@
 #define MU_WRITEABLE_H
 
 #include "mu/mem/buffer.h" // Buffer
-#include "mu/mem/mem.h"
+#include "mu/mem/utils.h"  // swapEndian
 #include "mu/panic.h"      // MU_PANIC
 #include "mu/primitives.h" // u8, usize, cstr
-#include <bit>
-#include <cassert> // assert
-#include <cstdio>  // FILE, fprintf, sprintf
+#include <bit>             // endian::native
+#include <cassert>         // assert
+#include <cstdio>          // FILE, fprintf, snprintf
 
 // TODO: Make thread safe version!
-namespace mu {
+namespace mu::io {
 using namespace primitives;
 
 class Writer {
@@ -75,6 +75,6 @@ private:
   }
 };
 
-} // namespace mu
+} // namespace mu::io
 
 #endif // !MU_WRITEABLE_H
