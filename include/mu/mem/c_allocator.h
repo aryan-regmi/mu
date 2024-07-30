@@ -10,6 +10,14 @@ namespace mu::mem {
 using namespace primitives;
 
 class CAllocator : public Allocator {
+public:
+  CAllocator()                                   = default;
+  ~CAllocator()                                  = default;
+  CAllocator(const CAllocator& other)            = default;
+  CAllocator(CAllocator&& other)                 = default;
+  CAllocator& operator=(const CAllocator& other) = default;
+  CAllocator& operator=(CAllocator&& other)      = default;
+
 private:
   virtual auto alloc_fn(void* /*ctx*/,
                         usize byte_size) noexcept -> void* override {

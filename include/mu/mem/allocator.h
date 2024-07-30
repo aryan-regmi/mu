@@ -7,6 +7,7 @@
 #include <cstdint>         // SIZE_MAX
 #include <exception>       // exception
 
+// TODO: Make thread safe allocator? (Impl, not interface)
 namespace mu::mem {
 using namespace primitives;
 

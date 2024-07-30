@@ -1,6 +1,5 @@
 #include "mu/common.h"
 #include "mu/mem/c_allocator.h"
-#include "mu/panic.h"
 #include "mu/primitives.h"
 #include "mu/slice.h"
 #include <cassert>
