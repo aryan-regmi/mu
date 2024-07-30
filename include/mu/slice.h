@@ -2,18 +2,28 @@
 #define MU_SLICE_H
 
 #include "mu/common.h"     // IndexOutOfBounds
-#include "mu/debuggable.h" // Debuggable, Debug
 #include "mu/primitives.h" // usize, u8< u64
+#include <iostream>
+#include <ostream>
+#include <source_location>
+#include <type_traits>
 
 namespace mu {
 using namespace primitives;
+
+namespace internal::helper {
+template <typename T>
+concept HasDebugFn = requires(const T self) {
+  { self.debug() } -> std::same_as<void>;
+};
+} // namespace internal::helper
 
 // TODO: Move to impl file.
 //
 /// A dynamically-sized view into a contiguous sequence, [T]. Contiguous here
 /// means that elements are laid out so that every element is the same distance
 /// from its neighbors.
-template <typename T> class Slice : public Debug<Slice<T>> {
+template <typename T> class Slice {
 public:
   explicit Slice()                     = default;
   ~Slice()                             = default;
@@ -40,14 +50,30 @@ public:
     if (idx >= this->len()) {
       throw common::IndexOutOfBounds(idx, this->len());
     }
-    return *reinterpret_cast<T*>(reinterpret_cast<u8*>(this->ptr_) + idx);
+    return *(this->ptr_ + idx);
   }
 
-  /// Debug implementation.
-  auto writeToBuf(Slice<u8> /*buf*/) const -> void {
-    if (Debuggable<T>) {
-      // TODO: Call T debug!!, write Slice stuff
+  /// Print the slice to `stderr`.
+  auto debug(const std::source_location loc =
+                 std::source_location::current()) const -> void {
+    std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
+              << loc.column() << "] = ";
+    std::cout << "Slice {" << std::endl;
+    std::cout << "\tptr: " << this->ptr_ << std::endl;
+    std::cout << "\tlen: " << this->len_ << std::endl;
+    std::cout << "\telements: [";
+    for (usize i = 0; i < this->len_; i++) {
+      if constexpr (internal::helper::HasDebugFn<T>) {
+        // TODO: Call T debug!!
+      } else {
+        std::cout << " " << *(this->ptr_ + i);
+      }
+      if (i < this->len_ - 1) {
+        std::cout << ",";
+      }
     }
+    std::cout << " ]" << std::endl;
+    std::cout << "}" << std::endl;
   }
 
 private:

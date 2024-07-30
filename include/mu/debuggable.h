@@ -1,6 +1,7 @@
 #ifndef MU_DEBUGGABLE_H
 #define MU_DEBUGGABLE_H
 
+#include "mu/io/writer.h"
 #include "mu/primitives.h" // u8
 #include <cassert>         // assert
 #include <concepts>        // same_as
@@ -9,11 +10,9 @@
 namespace mu {
 using namespace primitives;
 
-template <typename T> class Slice;
-
 template <typename T>
-concept Debuggable = requires(const T self, Slice<u8> buf) {
-  { self.writeToBuf(buf) } -> std::same_as<void>;
+concept Debuggable = requires(const T self, io::Writer& writer) {
+  { self.write(writer) } -> std::same_as<void>;
 };
 
 // template <Debuggable Context> struct Debug {
@@ -21,8 +20,9 @@ template <typename Context> struct Debug {
   auto debug() const -> void
     requires(Debuggable<Context>)
   {
-    // this->writeToBuf(Slice<u8>(nullptr, 0));
     // TODO: Impl!
+    //  - Create File(stdout) writer
+    //  - Write the self.write() value to that!
   }
 };
 

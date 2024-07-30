@@ -97,7 +97,7 @@ private:
                    len, align);
     }
 
-    T* ptr = static_cast<T*>(this->rawAlloc(sizeof(T) * len, align));
+    T* ptr = reinterpret_cast<T*>(this->rawAlloc(sizeof(T) * len, align));
     if (ptr == nullptr) {
       throw AllocatorException(AllocatorError::OutOfMemory);
     }

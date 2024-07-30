@@ -36,7 +36,7 @@ int main(void) {
 
   {
     constexpr u8 alignment = 16;
-    Slice<int>   val       = allocator.allocAligned<int>(1, alignment);
+    Slice<int>   val       = allocator.allocAligned<int>(2, alignment);
     u8*          aligned   = reinterpret_cast<u8*>(val.ptr());
     u8*          offset    = aligned - alignment;
     u8*          alloced   = aligned - *offset;
@@ -44,7 +44,11 @@ int main(void) {
 
     // Testing slice
     try {
-      assert(val[0] == 0);         // Doesn' throw
+      val[0] = 1;
+      val[1] = 2;
+      val.debug();
+      assert(val[0] == 1);         // Doesn't throw
+      assert(val[1] == 2);         // Doesn't throw
       printf("Error: %d", val[3]); // Throws error
     } catch (common::IndexOutOfBounds& e) {
       const usize BUFSIZE = 128;
