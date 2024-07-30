@@ -1,13 +1,15 @@
 #ifndef MU_ALLOCATOR_H
 #define MU_ALLOCATOR_H
 
-#include "mu/panic.h"      // MU_PANIC
 #include "mu/primitives.h" // usize, u8
 #include "mu/slice.h"      // Slice
 #include <cstdint>         // SIZE_MAX
 #include <exception>       // exception
 
 // TODO: Make thread safe allocator? (Impl, not interface)
+//
+// TODO: Remove `ctx` + make `alloc_fn` and `free_fn` abstract, virtual funcs
+// (virtual `func` = 0;)
 namespace mu::mem {
 using namespace primitives;
 
@@ -83,18 +85,9 @@ public:
     this->rawFree(slice.ptr(), slice.align());
   }
 
-protected:
-  void* ctx = nullptr;
-
 private:
-  virtual auto alloc_fn(void* /*ctx*/, usize /*byte_size*/) noexcept -> void* {
-    MU_PANIC("`alloc_fn` not implemented!");
-    return nullptr;
-  }
-
-  virtual auto free_fn(void* /*ctx*/, void* /*ptr*/) noexcept -> void {
-    MU_PANIC("`free_fn` not implemented!");
-  };
+  virtual auto alloc_fn(usize byte_size) -> void* = 0;
+  virtual auto free_fn(void* ptr) -> void         = 0;
 
   template <typename T>
   constexpr auto allocCustom(usize len, u8 align = alignof(T)) -> Slice<T> {

@@ -1,56 +1,44 @@
-#ifndef MU_WRITEABLE_H
-#define MU_WRITEABLE_H
+#ifndef MU_WRITER_H
+#define MU_WRITER_H
 
-#include "mu/mem/buffer.h" // Buffer
 #include "mu/mem/utils.h"  // swapEndian
-#include "mu/panic.h"      // MU_PANIC
 #include "mu/primitives.h" // u8, usize, cstr
+#include "mu/slice.h"      // Slice
 #include <bit>             // endian::native
 #include <cassert>         // assert
 #include <cstdio>          // FILE, fprintf, snprintf
 
 // TODO: Make thread safe version!
+//
+// TODO: Add concept to check for `format` and `write_fn` funcs!
 namespace mu::io {
 using namespace primitives;
 
 class Writer {
 public:
-  Writer()          = default;
-  virtual ~Writer() = default;
+  Writer()                                                           = default;
+  virtual ~Writer()                                                  = default;
 
   /// Write the buffer into this writer, returning how many bytes were written.
-  [[nodiscard]] auto write(mem::Buffer buf) -> usize {
-    return this->write_fn(this->buf, buf);
-  }
-
-  /// Attempts to write an entire buffer into this writer.
-  auto writeAll(mem::Buffer buf) -> void {
-    usize idx = 0;
-    while (idx != buf.len) {
-      idx     += this->write(buf);
-      buf.ptr += idx;
-    }
-  }
+  [[nodiscard]] virtual auto write(Slice<u8> /*buf*/) -> usize       = 0;
 
   /// Writes a formatted string into this writer.
-  template <typename... Args>
-  auto format(const_cstr fmt, Args... args) -> void {
-    assert(this->buf.len > std::strlen(fmt) + sizeof...(args));
-    usize written = std::snprintf(this->buf.ptr, this->buf.len, fmt, args...);
-    assert(written != 0);
-  }
+  virtual auto               format(const_cstr /*fmt*/, ...) -> void = 0;
 
-  /// Writes to the specified file.
-  auto writeToFile(std::FILE* file) const {
-    usize written = std::fprintf(file, "%s", this->buf.ptr);
-    assert(written != 0);
+  /// Attempts to write an entire buffer into this writer.
+  auto                       writeAll(Slice<u8> buf) -> void {
+    usize idx = 0;
+    while (idx != buf.len()) {
+      idx += this->write(buf);
+      buf  = Slice(buf.ptr() + idx, buf.len());
+    }
   }
 
   /// Write the object into this writer.
   template <typename T>
   auto writeObject(T obj, usize bytesize = sizeof(T)) -> void {
     u8* bytes = reinterpret_cast<u8*>(reinterpret_cast<char*>(&obj));
-    this->writeAll(mem::Buffer(bytes, bytesize));
+    this->writeAll(Slice(bytes, bytesize));
   }
 
   /// Write the object into this writer, with the endianness specified in the
@@ -64,17 +52,8 @@ public:
       this->writeObject(obj);
     }
   }
-
-protected:
-  mem::Buffer buf;
-
-private:
-  virtual auto write_fn(mem::Buffer /*buf*/, mem::Buffer /*bytes*/) -> usize {
-    MU_PANIC("`write_fn` not implemented!");
-    return 0;
-  }
 };
 
 } // namespace mu::io
 
-#endif // !MU_WRITEABLE_H
+#endif // !MU_WRITER_H

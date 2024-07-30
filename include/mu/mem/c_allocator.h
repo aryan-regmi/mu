@@ -19,13 +19,11 @@ public:
   CAllocator& operator=(CAllocator&& other)      = default;
 
 private:
-  auto alloc_fn(void* /*ctx*/, usize byte_size) noexcept -> void* override {
+  auto alloc_fn(usize byte_size) noexcept -> void* override {
     return std::calloc(1, byte_size);
   }
 
-  auto free_fn(void* /*ctx*/, void* ptr) noexcept -> void override {
-    std::free(ptr);
-  }
+  auto free_fn(void* ptr) noexcept -> void override { std::free(ptr); }
 };
 
 } // namespace mu::mem

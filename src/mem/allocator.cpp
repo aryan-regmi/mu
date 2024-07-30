@@ -24,7 +24,7 @@ auto AllocatorException::what() const throw() -> const_cstr {
 auto Allocator::rawAlloc(usize byte_size, u8 align) -> void* {
   assert(isPowerOf2(align));
   u8*   res = nullptr;
-  void* ptr = this->alloc_fn(this->ctx, byte_size + align);
+  void* ptr = this->alloc_fn(byte_size + align);
   if (ptr != nullptr) {
     // Align allocation
     res = reinterpret_cast<u8*>(
@@ -42,7 +42,7 @@ auto Allocator::rawFree(void* ptr, u8 align) noexcept -> void {
     u8* aligned = reinterpret_cast<u8*>(ptr);
     u8* offset  = aligned - align;
     u8* alloced = aligned - *offset;
-    this->free_fn(this->ctx, alloced);
+    this->free_fn(alloced);
   }
 }
 

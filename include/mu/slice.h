@@ -8,19 +8,28 @@
 namespace mu {
 using namespace primitives;
 
+// TODO: Move to impl file.
+//
 /// A dynamically-sized view into a contiguous sequence, [T]. Contiguous here
 /// means that elements are laid out so that every element is the same distance
 /// from its neighbors.
 template <typename T> class Slice : public Debug<Slice<T>> {
 public:
-  explicit Slice() = default;
+  explicit Slice()                     = default;
+  ~Slice()                             = default;
+  Slice(const Slice& other)            = default;
+  Slice& operator=(const Slice& other) = default;
+
   explicit Slice(T* ptr, usize len, u8 align = alignof(T)) noexcept
       : ptr_{ptr}, len_{len}, align_{align} {}
+
+  // CAllocator& operator=(const CAllocator& other) = default;
 
   /// Returns the number of elements in the slice.
   inline auto len() const noexcept -> usize { return this->len_; }
 
   /// Returns the underlying pointer the slice points at.
+  // inline auto ptr() const noexcept -> T* { return this->ptr_; }
   inline auto ptr() const noexcept -> T* { return this->ptr_; }
 
   /// Returns the alignment of the slice.
