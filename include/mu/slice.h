@@ -44,7 +44,7 @@ public:
   }
 
   /// Debug implementation.
-  auto writeToBuf(u8* /*buf*/) const -> void {
+  auto writeToBuf(Slice<u8> /*buf*/) const -> void {
     if (Debuggable<T>) {
       // TODO: Call T debug!!, write Slice stuff
     }
