@@ -62,7 +62,9 @@ public:
     std::cout << "\telements: [";
     for (usize i = 0; i < this->len_; i++) {
       if constexpr (internal::helper::HasDebugFn<T>) {
-        // TODO: Call T debug!!
+        T& val = *(this->ptr_ + i);
+        val.debug();
+        // std::cout << " " << val.debug();
       } else {
         std::cout << " " << *(this->ptr_ + i);
       }

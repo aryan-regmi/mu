@@ -1,4 +1,5 @@
 #include "mu/common.h"
+#include "mu/debuggable.h"
 #include "mu/mem/c_allocator.h"
 #include "mu/primitives.h"
 #include "mu/slice.h"
@@ -46,7 +47,7 @@ int main(void) {
     try {
       val[0] = 1;
       val[1] = 2;
-      val.debug();
+      dbg(val);
       assert(val[0] == 1);         // Doesn't throw
       assert(val[1] == 2);         // Doesn't throw
       printf("Error: %d", val[3]); // Throws error

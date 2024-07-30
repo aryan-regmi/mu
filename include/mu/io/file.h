@@ -11,15 +11,6 @@
 
 namespace mu::io {
 
-enum class FileMode {
-  Read,
-  Write,
-  Append,
-  ReadExtended,
-  WriteExtended,
-  AppendExtended,
-};
-
 /// File not found.
 class FileNotFound : std::exception {
 public:
@@ -33,11 +24,21 @@ public:
   const_cstr filename;
 };
 
+/// A file.
 class File : public Writer {
 public:
+  enum class Mode {
+    Read,
+    Write,
+    Append,
+    ReadExtended,
+    WriteExtended,
+    AppendExtended,
+  };
+
   explicit File() = default;
 
-  explicit File(const_cstr filename, FileMode mode) {
+  explicit File(const_cstr filename, Mode mode) {
     std::FILE* file = std::fopen(filename, getFileMode(mode));
     if (file == nullptr) {
       int closed = std::fclose(file);
@@ -69,19 +70,19 @@ public:
 private:
   std::FILE*  file = nullptr;
 
-  static auto getFileMode(FileMode mode) -> const_cstr {
+  static auto getFileMode(Mode mode) -> const_cstr {
     switch (mode) {
-    case FileMode::Read:
+    case Mode::Read:
       return "r";
-    case FileMode::Write:
+    case Mode::Write:
       return "w";
-    case FileMode::Append:
+    case Mode::Append:
       return "a";
-    case FileMode::ReadExtended:
+    case Mode::ReadExtended:
       return "r+";
-    case FileMode::WriteExtended:
+    case Mode::WriteExtended:
       return "w+";
-    case FileMode::AppendExtended:
+    case Mode::AppendExtended:
       return "a+";
     }
   }
