@@ -29,7 +29,7 @@ template <typename Context> struct Debug {
   {
     const Context*       self   = static_cast<const Context*>(this);
     FILE*                file   = stdout;
-    io::ThreadSafeWriter writer = io::ThreadSafeWriter(io::File(file));
+    io::ThreadSafeWriter writer = io::ThreadSafeWriter<io::File>(file);
     self->writeFmt(writer);
   }
 };

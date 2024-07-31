@@ -9,6 +9,7 @@
 #include <cstdarg>         // va_list, va_start, va_end
 #include <cstdio>          // FILE, fprintf, snprintf
 #include <mutex>           // mutex, lock_guard
+#include <utility>         // move
 
 namespace mu::io {
 
@@ -75,7 +76,26 @@ template <Writeable T> class ThreadSafeWriter : public Writer {
 public:
   ~ThreadSafeWriter() = default;
 
-  explicit ThreadSafeWriter(T writer) : writer{writer} {}
+  /// Create a `ThreadSafeWriter` from an already initalized writer of type `T`.
+  ///
+  /// ## Note
+  /// This does **not** initialize the `writer` in a thread-safe way; the caller
+  /// is responsible for doing so.
+  static auto fromRaw(T writer) -> ThreadSafeWriter {
+    ThreadSafeWriter ts_writer{};
+    ts_writer.writer = std::move(writer);
+    return ts_writer;
+  }
+
+  /// Creates a `ThreadSafeWriter` by initializing the `writer` in a thread-safe
+  /// manner.
+  ///
+  /// ## Note
+  /// All arguments to this are forwarded to the constructor of `T`.
+  template <typename... Args> explicit ThreadSafeWriter(Args... args) {
+    const std::lock_guard<std::mutex> lock(this->mutex);
+    this->writer = T{std::forward<Args>(args)...};
+  }
 
   auto write(Slice<u8> buf) -> usize override {
     const std::lock_guard<std::mutex> lock(this->mutex);
