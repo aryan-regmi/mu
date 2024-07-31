@@ -67,6 +67,10 @@ concept Writeable =
       { self.formatV(fmt, args) } -> std::same_as<void>;
     };
 
+/// A thread-safe `Writer`.
+///
+/// This locks a mutex before the `write` and `formatV` calls to ensure thread
+/// safety.
 template <Writeable T> class ThreadSafeWriter : public Writer {
 public:
   ~ThreadSafeWriter() = default;

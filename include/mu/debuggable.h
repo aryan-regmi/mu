@@ -27,11 +27,10 @@ template <typename Context> struct Debug {
   auto debug() const -> void
     requires(Debuggable<Context>)
   {
-    const Context*       self      = static_cast<const Context*>(this);
-    FILE*                file      = stdout;
-    io::File             writer    = io::File(file);
-    io::ThreadSafeWriter ts_writer = io::ThreadSafeWriter(io::File(file));
-    self->writeFmt(ts_writer);
+    const Context*       self   = static_cast<const Context*>(this);
+    FILE*                file   = stdout;
+    io::ThreadSafeWriter writer = io::ThreadSafeWriter(io::File(file));
+    self->writeFmt(writer);
   }
 };
 
