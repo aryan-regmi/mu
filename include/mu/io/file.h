@@ -4,11 +4,8 @@
 #include "mu/io/writer.h"  // Writer
 #include "mu/primitives.h" // const_cstr, usize, u8
 #include "mu/slice.h"      // Slice
-#include <cassert>         // assert
 #include <cstdarg>         // va_list
-#include <cstdio>          // vfprintf, fwrite
 #include <exception>       // exception
-#include <unistd.h>        // dup
 
 namespace mu::io {
 
@@ -18,9 +15,7 @@ public:
   explicit FileNotFound(const_cstr filename) : filename{filename} {}
 
   /// Explains the error.
-  auto what() const throw() -> const_cstr override {
-    return "FileNotFound: The file was not found";
-  }
+  auto       what() const throw() -> const_cstr override;
 
   const_cstr filename;
 };
@@ -41,86 +36,41 @@ public:
   File(const File& other)                  = delete;
   File&       operator=(const File& other) = delete;
 
-  static auto fromRaw(FILE* file) -> File {
-    File new_file{};
-    new_file.file = file;
-    return new_file;
-  }
+  /// Creates a `File` from a raw `FILE*`.
+  static auto fromRaw(FILE* file) -> File;
 
-  explicit File(const_cstr filename, Mode mode) {
-    std::FILE* file = std::fopen(filename, getFileMode(mode));
-    if (file == nullptr) {
-      int closed = std::fclose(file);
-      assert(closed == 0);
-      throw FileNotFound(filename);
-    }
-    this->file = file;
-    this->mode = mode;
-  }
+  /// Create/open the file with `filename` in the specified mode.
+  explicit File(const_cstr filename, Mode mode);
 
-  File(File&& other) {
-    this->file = other.file;
-    other.file = nullptr;
-  }
+  // TODO: Handle path, etc instead of raw filenames
 
-  File& operator=(File&& other) {
-    if (other.file == this->file) {
-      return *this;
-    }
-    this->file = other.file;
-    other.file = nullptr;
-    return *this;
-  }
+  /// Move construct from `other`.
+  File(File&& other);
 
-  ~File() {
-    if ((this->file != stdout) && (this->file != stderr)) {
-      if (this->file != nullptr) {
-        int closed = std::fclose(this->file);
-        assert((closed == 0) || (closed == EOF));
-      }
-    }
-  }
+  /// Move assign from `other`.
+  File& operator=(File&& other);
+
+  /// Cleanup resources used by `File`.
+  ~File();
 
   /// Write the buffer to this file, returning how many bytes were written.
-  [[nodiscard]] auto write(Slice<u8> buf) -> usize override {
-    return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), this->file);
-  }
+  [[nodiscard]] auto write(Slice<u8> buf) -> usize override;
 
   /// Write formatted data into this file.
-  auto formatV(const_cstr fmt, va_list args) -> void override {
-    usize written = std::vfprintf(this->file, fmt, args);
-    assert(written != 0);
-  }
+  auto               formatV(const_cstr fmt, va_list args) -> void override;
 
-  auto toRaw() const -> std::FILE* { return this->file; }
+  /// Get the raw `FILE*`.
+  auto               toRaw() const -> std::FILE*;
 
   /// Clones the file.
-  auto clone() const -> File {
-    FILE* copied_file =
-        fdopen(dup(fileno(this->file)), getFileMode(this->mode));
-    return File::fromRaw(copied_file);
-  }
+  auto               clone() const -> File;
 
 private:
   std::FILE*  file = nullptr;
   Mode        mode = Mode::Read;
 
-  static auto getFileMode(Mode mode) -> const_cstr {
-    switch (mode) {
-    case Mode::Read:
-      return "r";
-    case Mode::Write:
-      return "w";
-    case Mode::Append:
-      return "a";
-    case Mode::ReadExtended:
-      return "r+";
-    case Mode::WriteExtended:
-      return "w+";
-    case Mode::AppendExtended:
-      return "a+";
-    }
-  }
+  /// Get the file mode as a C-string.
+  static auto getFileMode(Mode mode) -> const_cstr;
 };
 
 struct Stdout : public Writer {
@@ -132,15 +82,10 @@ struct Stdout : public Writer {
   Stdout&            operator=(Stdout&& other) noexcept = default;
 
   /// Write the buffer to `stdout`, returning how many bytes were written.
-  [[nodiscard]] auto write(Slice<u8> buf) -> usize override {
-    return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), stdout);
-  }
+  [[nodiscard]] auto write(Slice<u8> buf) -> usize override;
 
   /// Write formatted data to `stdout`.
-  auto formatV(const_cstr fmt, va_list args) -> void override {
-    usize written = std::vfprintf(stdout, fmt, args);
-    assert(written != 0);
-  }
+  auto               formatV(const_cstr fmt, va_list args) -> void override;
 };
 
 struct Stderr : public Writer {
@@ -152,15 +97,10 @@ struct Stderr : public Writer {
   Stderr&            operator=(Stderr&& other) noexcept = default;
 
   /// Write the buffer to `stderr`, returning how many bytes were written.
-  [[nodiscard]] auto write(Slice<u8> buf) -> usize override {
-    return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), stderr);
-  }
+  [[nodiscard]] auto write(Slice<u8> buf) -> usize override;
 
   /// Write formatted data to `stderr`.
-  auto formatV(const_cstr fmt, va_list args) -> void override {
-    usize written = std::vfprintf(stderr, fmt, args);
-    assert(written != 0);
-  }
+  auto               formatV(const_cstr fmt, va_list args) -> void override;
 };
 
 } // namespace mu::io
