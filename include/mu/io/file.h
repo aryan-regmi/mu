@@ -8,6 +8,7 @@
 #include <cstdarg>         // va_list
 #include <cstdio>          // vfprintf, fwrite
 #include <exception>       // exception
+#include <unistd.h>        // dup
 
 namespace mu::io {
 
@@ -36,9 +37,15 @@ public:
     AppendExtended,
   };
 
-  explicit File() = default;
+  explicit File()                          = default;
+  File(const File& other)                  = delete;
+  File&       operator=(const File& other) = delete;
 
-  explicit File(FILE* file) { this->file = file; }
+  static auto fromRaw(FILE* file) -> File {
+    File new_file{};
+    new_file.file = file;
+    return new_file;
+  }
 
   explicit File(const_cstr filename, Mode mode) {
     std::FILE* file = std::fopen(filename, getFileMode(mode));
@@ -48,6 +55,21 @@ public:
       throw FileNotFound(filename);
     }
     this->file = file;
+    this->mode = mode;
+  }
+
+  File(File&& other) {
+    this->file = other.file;
+    other.file = nullptr;
+  }
+
+  File& operator=(File&& other) {
+    if (other.file == this->file) {
+      return *this;
+    }
+    this->file = other.file;
+    other.file = nullptr;
+    return *this;
   }
 
   ~File() {
@@ -64,6 +86,7 @@ public:
     return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), this->file);
   }
 
+  /// Write formatted data into this file.
   auto formatV(const_cstr fmt, va_list args) -> void override {
     usize written = std::vfprintf(this->file, fmt, args);
     assert(written != 0);
@@ -71,8 +94,16 @@ public:
 
   auto toRaw() const -> std::FILE* { return this->file; }
 
+  /// Clones the file.
+  auto clone() const -> File {
+    FILE* copied_file =
+        fdopen(dup(fileno(this->file)), getFileMode(this->mode));
+    return File::fromRaw(copied_file);
+  }
+
 private:
   std::FILE*  file = nullptr;
+  Mode        mode = Mode::Read;
 
   static auto getFileMode(Mode mode) -> const_cstr {
     switch (mode) {
@@ -89,6 +120,46 @@ private:
     case Mode::AppendExtended:
       return "a+";
     }
+  }
+};
+
+struct Stdout : public Writer {
+  explicit Stdout() noexcept                            = default;
+  ~Stdout() noexcept                                    = default;
+  Stdout(const Stdout& other) noexcept                  = default;
+  Stdout& operator=(const Stdout& other) noexcept       = default;
+  Stdout(Stdout&& other) noexcept                       = default;
+  Stdout&            operator=(Stdout&& other) noexcept = default;
+
+  /// Write the buffer to `stdout`, returning how many bytes were written.
+  [[nodiscard]] auto write(Slice<u8> buf) -> usize override {
+    return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), stdout);
+  }
+
+  /// Write formatted data to `stdout`.
+  auto formatV(const_cstr fmt, va_list args) -> void override {
+    usize written = std::vfprintf(stdout, fmt, args);
+    assert(written != 0);
+  }
+};
+
+struct Stderr : public Writer {
+  explicit Stderr() noexcept                            = default;
+  ~Stderr() noexcept                                    = default;
+  Stderr(const Stderr& other) noexcept                  = default;
+  Stderr& operator=(const Stderr& other) noexcept       = default;
+  Stderr(Stderr&& other) noexcept                       = default;
+  Stderr&            operator=(Stderr&& other) noexcept = default;
+
+  /// Write the buffer to `stderr`, returning how many bytes were written.
+  [[nodiscard]] auto write(Slice<u8> buf) -> usize override {
+    return std::fwrite(buf.ptr(), sizeof(u8), buf.len(), stderr);
+  }
+
+  /// Write formatted data to `stderr`.
+  auto formatV(const_cstr fmt, va_list args) -> void override {
+    usize written = std::vfprintf(stderr, fmt, args);
+    assert(written != 0);
   }
 };
 

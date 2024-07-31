@@ -1,4 +1,5 @@
 sources += files([
-  'mem/allocator.cpp',
   'common.cpp',
+  'debuggable.cpp',
+  'mem/allocator.cpp',
 ])
