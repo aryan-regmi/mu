@@ -30,12 +30,12 @@ File::File(const_cstr filename, Mode mode) {
   this->mode = mode;
 }
 
-File::File(File&& other) {
+File::File(File&& other) noexcept {
   this->file = other.file;
   other.file = nullptr;
 }
 
-File& File::operator=(File&& other) {
+File& File::operator=(File&& other) noexcept {
   if (other.file == this->file) {
     return *this;
   }

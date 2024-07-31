@@ -15,8 +15,6 @@ concept HasDebugFn = requires(const T self) {
 };
 } // namespace internal::helper
 
-// TODO: Move to impl file.
-//
 /// A dynamically-sized view into a contiguous sequence, [T]. Contiguous here
 /// means that elements are laid out so that every element is the same distance
 /// from its neighbors.

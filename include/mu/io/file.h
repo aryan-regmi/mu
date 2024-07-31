@@ -45,10 +45,10 @@ public:
   // TODO: Handle path, etc instead of raw filenames
 
   /// Move construct from `other`.
-  File(File&& other);
+  File(File&& other) noexcept;
 
   /// Move assign from `other`.
-  File& operator=(File&& other);
+  File& operator=(File&& other) noexcept;
 
   /// Cleanup resources used by `File`.
   ~File();
