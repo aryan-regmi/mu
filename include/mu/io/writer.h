@@ -2,12 +2,10 @@
 #define MU_WRITER_H
 
 #include "mu/mem/utils.h"  // swapEndian
-#include "mu/primitives.h" // u8, usize, cstr
+#include "mu/primitives.h" // u8, usize, const_cstr
 #include "mu/slice.h"      // Slice
 #include <bit>             // endian::native
-#include <cassert>         // assert
-#include <cstdarg>         // va_list, va_start, va_end
-#include <cstdio>          // FILE, fprintf, snprintf
+#include <cstdarg>         // va_list
 #include <mutex>           // mutex, lock_guard
 #include <utility>         // move
 
@@ -25,21 +23,10 @@ public:
   virtual auto               formatV(const_cstr fmt, va_list args) -> void = 0;
 
   /// Writes a formatted string into this writer.
-  auto                       format(const_cstr fmt, ...) -> void {
-    va_list args;
-    va_start(args, fmt);
-    this->formatV(fmt, args);
-    va_end(args);
-  }
+  auto                       format(const_cstr fmt, ...) -> void;
 
   /// Attempts to write an entire buffer into this writer.
-  auto writeAll(Slice<u8> buf) -> void {
-    usize idx = 0;
-    while (idx != buf.len()) {
-      idx += this->write(buf);
-      buf  = Slice(buf.ptr() + idx, buf.len());
-    }
-  }
+  auto                       writeAll(Slice<u8> buf) -> void;
 
   /// Write the object into this writer.
   template <typename T>
