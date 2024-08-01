@@ -7,6 +7,11 @@
 #include "mu/slice.h"         // Slice
 #include <utility>            // forward, swap
 
+// TODO: Parameterize UniquePtr by Allocator!
+//  - create will take in a parameterized `Allocator* allocator = nullptr`:
+//    - if it is nullptr, use `Allocator()` for [de]allocations
+//    - store it as variant<monostate, Allocator> so no extra space required
+
 namespace mu {
 
 /// A smart pointer that owns and manages another object through a pointer and

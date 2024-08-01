@@ -2,12 +2,8 @@
 #include "mu/io/file.h"
 #include "mu/mem/c_allocator.h"
 #include "mu/mem/unique_ptr.h"
-#include "mu/panic.h"
-#include "mu/primitives.h"
-#include <algorithm>
 #include <cassert>
 #include <cstdio>
-#include <exception>
 #include <utility>
 
 using namespace mu;
