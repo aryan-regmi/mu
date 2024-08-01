@@ -20,10 +20,10 @@ concept HasDebugFn = requires(const T self) {
 /// from its neighbors.
 template <typename T> class Slice {
 public:
-  explicit Slice()                     = default;
-  ~Slice()                             = default;
-  Slice(const Slice& other)            = default;
-  Slice& operator=(const Slice& other) = default;
+  explicit Slice() noexcept                     = default;
+  ~Slice() noexcept                             = default;
+  Slice(const Slice& other) noexcept            = default;
+  Slice& operator=(const Slice& other) noexcept = default;
 
   explicit Slice(T* ptr, usize len, u8 align = alignof(T)) noexcept
       : ptr_{ptr}, len_{len}, align_{align} {}

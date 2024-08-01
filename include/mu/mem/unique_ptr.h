@@ -1,55 +1,73 @@
 #ifndef MU_UNIQUE_PTR_H
 #define MU_UNIQUE_PTR_H
 
-#include "mu/mem/allocator.h"
-#include <algorithm>
-#include <memory>
-#include <utility>
+#include "mu/mem/allocator.h" // Allocator
+#include "mu/primitives.h"    // usize
+#include "mu/slice.h"         // Slice
+#include <utility>            // forward, swap
+
 namespace mu {
 
-// TODO: Specialize for arrays/slices
 template <typename T> class UniquePtr {
 public:
   UniquePtr(const UniquePtr&)                    = delete;
   auto operator=(const UniquePtr&) -> UniquePtr& = delete;
 
+  /// Constructs an object of type `T` and wraps it in a `UniquePtr`.
   template <typename... Args>
-  static auto create(mem::Allocator& allocator, Args... args) -> UniquePtr<T> {
-    T* data = allocator.create<T>();
+  static auto create(mem::Allocator* allocator, Args... args) -> UniquePtr<T> {
+    T* data = allocator->create<T>();
     *data   = T{std::forward<Args>(args)...};
     return UniquePtr(allocator, data);
   }
 
-  explicit UniquePtr(mem::Allocator& allocator, T* data)
+  /// Creates a `UniquePtr` from a pointer (`data`) allocated using `allocator`.
+  explicit UniquePtr(mem::Allocator* allocator, T* data)
       : allocator{allocator}, data{data} {}
 
+  /// Creates a `UniquePtr` by transferring ownership from `other` to `this` and
+  /// stores the null pointer in `other`.
   UniquePtr(UniquePtr&& other) noexcept {
-    this->allocator = other.allocator;
+    this->allocator = std::move(other.allocator);
     this->data      = other.data;
     other.data      = nullptr;
   }
 
-  UniquePtr& operator=(UniquePtr&& other) noexcept {
+  /// Move assignment operator.
+  /// Transfers ownership from `other` to `this`.
+  auto operator=(UniquePtr&& other) noexcept -> UniquePtr& {
     if (this->data == other.data) {
       return *this;
     }
+    // TODO: Free old data?
     this->allocator = other.allocator;
     this->data      = other.data;
     other.data      = nullptr;
   }
 
-  ~UniquePtr() { this->allocator.destroy(this->data); }
+  /// Destroys the managed object.
+  ~UniquePtr() { this->allocator->destroy(this->data); }
 
-  constexpr auto     operator->() const noexcept -> T* { return data; }
-
+  ///  Returns the object owned by `this`.
   constexpr auto     operator*() const noexcept -> T& { return *data; }
 
+  ///  Returns a pointer to the object owned by `this`.
+  constexpr auto     operator->() const noexcept -> T* { return data; }
+
+  /// Checks if `this` owns an object.
+  ///
+  /// Returns `true` if `this.data != nullptr`.
   constexpr explicit operator bool() const noexcept { return data; }
+
+  /// Checks if `this` owns an object.
+  ///
+  /// Returns `true` if `this.data != nullptr`.
+  auto               valid() const -> bool { return data != nullptr; }
 
   /// Get the data stored in the `UniquePtr`.
   auto               get() const -> T* { return data; }
 
-  /// Returns a pointer to the managed object and releases the ownership
+  /// Returns a pointer to the managed object and releases the ownership.
   auto               release() noexcept -> T* {
     T* res = nullptr;
     std::swap(res, this->data);
@@ -64,13 +82,102 @@ public:
     T* old     = this->data;
     this->data = ptr;
     if (old) {
-      this->allocator.destroy(old);
+      this->allocator->destroy(old);
     }
   }
 
 private:
-  mem::Allocator& allocator;
+  mem::Allocator* allocator;
   T*              data;
+};
+
+template <typename T> class UniquePtr<Slice<T>> {
+public:
+  UniquePtr(const UniquePtr&)                    = delete;
+  auto operator=(const UniquePtr&) -> UniquePtr& = delete;
+
+  /// Constructs `len` number of objects of type `T` and wraps the resulting
+  /// slice in a `UniquePtr`.
+  template <typename... Args>
+  static auto create(mem::Allocator* allocator, usize len,
+                     Args... args) -> UniquePtr<Slice<T>> {
+    Slice<T> data = allocator->alloc<T>(len);
+    for (usize i = 0; i < len; i++) {
+      data[i] = T{std::forward<Args>(args)...};
+    }
+    return UniquePtr(allocator, data);
+  }
+
+  /// Creates a `UniquePtr` from a slice (`data`) allocated using `allocator`.
+  explicit UniquePtr(mem::Allocator* allocator, Slice<T> data)
+      : allocator{allocator}, data{data} {}
+
+  /// Creates a `UniquePtr` by transferring ownership from `other` to `this`.
+  UniquePtr(UniquePtr&& other) noexcept {
+    this->allocator = other.allocator;
+    this->data      = other.data;
+    other.data      = Slice<T>(nullptr, 0);
+  }
+
+  /// Move assignment operator.
+  /// Transfers ownership from `other` to `this`.
+  auto operator=(UniquePtr&& other) noexcept -> UniquePtr& {
+    if (this->data.ptr() == other.data.ptr()) {
+      return *this;
+    }
+    // TODO: Free old data?
+    this->allocator = other.allocator;
+    this->data      = other.data;
+    other.data      = Slice<T>(nullptr, 0);
+  }
+
+  /// Destroys the managed slice.
+  ~UniquePtr() { this->allocator->free(this->data); }
+
+  ///  Returns the slice owned by `this`.
+  constexpr auto     operator*() const noexcept -> Slice<T>& { return data; }
+
+  ///  Returns the slice owned by `this`.
+  constexpr auto     operator->() const noexcept -> Slice<T>& { return data; }
+
+  /// Checks if `this` owns a slice.
+  ///
+  /// Returns `true` if `this.data` contains a valid slice.
+  constexpr explicit operator bool() const noexcept { return data.ptr(); }
+
+  /// Indexes into the underlying slice.
+  auto               operator[](u64 idx) -> T& { return this->data[idx]; }
+
+  /// Checks if `this` owns a slice.
+  ///
+  /// Returns `true` if `this.data` contains a valid slice.
+  auto               valid() const -> bool { return data.ptr() != nullptr; }
+
+  /// Get the slice stored in the `UniquePtr`.
+  auto               get() const -> Slice<T> { return data; }
+
+  /// Returns the managed slice and releases the ownership.
+  auto               release() noexcept -> Slice<T> {
+    Slice<T> res{};
+    std::swap(res, this->data);
+    return res;
+  }
+
+  // Replaces the current slice by `slice`.
+  //
+  // ## Note
+  // `slice` must be allocated using the same allocator as `this`.
+  auto replace(Slice<T> slice) noexcept -> void {
+    Slice<T> old = this->data;
+    this->data   = slice;
+    if (old.ptr()) {
+      this->allocator->free(old);
+    }
+  }
+
+private:
+  mem::Allocator* allocator;
+  Slice<T>        data;
 };
 
 } // namespace mu
