@@ -5,6 +5,8 @@
 
 namespace mu {
 
+// TODO: Add `Copy` trait for trivially_copyable types
+
 template <typename T>
 concept Cloneable = requires(const T self) {
   { self.clone() } -> std::same_as<T>;

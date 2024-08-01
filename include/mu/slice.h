@@ -1,6 +1,7 @@
 #ifndef MU_SLICE_H
 #define MU_SLICE_H
 
+#include "mu/cloneable.h"
 #include "mu/common.h"     // IndexOutOfBounds
 #include "mu/primitives.h" // usize, u8< u64
 #include <iostream>
@@ -41,7 +42,15 @@ public:
   inline auto align() const noexcept -> u8 { return this->align_; }
 
   /// Indexes into the slice.
-  T&          operator[](u64 idx) {
+  auto        operator[](u64 idx) -> T& {
+    if (idx >= this->len()) {
+      throw common::IndexOutOfBounds(idx, this->len());
+    }
+    return *(this->ptr_ + idx);
+  }
+
+  /// Indexes into the slice.
+  auto operator[](u64 idx) const -> const T& {
     if (idx >= this->len()) {
       throw common::IndexOutOfBounds(idx, this->len());
     }

@@ -1,6 +1,7 @@
 #ifndef MU_UNIQUE_PTR_H
 #define MU_UNIQUE_PTR_H
 
+#include "mu/cloneable.h"
 #include "mu/mem/allocator.h" // Allocator
 #include "mu/primitives.h"    // usize
 #include "mu/slice.h"         // Slice
@@ -8,6 +9,11 @@
 
 namespace mu {
 
+/// A smart pointer that owns and manages another object through a pointer and
+/// disposes of that object when the `UniquePtr` goes out of scope.
+///
+/// # Note
+/// Manages a single object of type `T`.
 template <typename T> class UniquePtr {
 public:
   UniquePtr(const UniquePtr&)                    = delete;
@@ -86,11 +92,28 @@ public:
     }
   }
 
+  // TODO: derive for `Cloneable<T>` or `Copyable<T>`
+  //  - have a constexpr if to check for each
+  //
+  /// Clones the contained value.
+  auto clone() const -> UniquePtr<T>
+    requires(Cloneable<T>)
+  {
+    T* data = this->allocator->template create<T>();
+    *data   = this->data->clone();
+    return UniquePtr(this->allocator, data);
+  }
+
 private:
   mem::Allocator* allocator;
   T*              data;
 };
 
+/// A smart pointer that owns and manages another object through a pointer and
+/// disposes of that object when the `UniquePtr` goes out of scope.
+///
+/// # Note
+/// Manages a dynamically-allocated array of objects.
 template <typename T> class UniquePtr<Slice<T>> {
 public:
   UniquePtr(const UniquePtr&)                    = delete;
@@ -148,16 +171,19 @@ public:
   /// Indexes into the underlying slice.
   auto               operator[](u64 idx) -> T& { return this->data[idx]; }
 
+  /// Indexes into the underlying slice.
+  auto operator[](u64 idx) const -> const T& { return this->data[idx]; }
+
   /// Checks if `this` owns a slice.
   ///
   /// Returns `true` if `this.data` contains a valid slice.
-  auto               valid() const -> bool { return data.ptr() != nullptr; }
+  auto valid() const -> bool { return data.ptr() != nullptr; }
 
   /// Get the slice stored in the `UniquePtr`.
-  auto               get() const -> Slice<T> { return data; }
+  auto get() const -> Slice<T> { return data; }
 
   /// Returns the managed slice and releases the ownership.
-  auto               release() noexcept -> Slice<T> {
+  auto release() noexcept -> Slice<T> {
     Slice<T> res{};
     std::swap(res, this->data);
     return res;
@@ -173,6 +199,20 @@ public:
     if (old.ptr()) {
       this->allocator->free(old);
     }
+  }
+
+  // TODO: derive for `Cloneable<T>` or `Copyable<T>`
+  //  - have a constexpr if to check for each
+  //
+  /// Clones the contained value.
+  auto clone() const -> UniquePtr<Slice<T>>
+    requires(Cloneable<T>)
+  {
+    Slice<T> data = this->allocator->template alloc<T>(this->data.len());
+    for (usize i = 0; i < this->data.len(); i++) {
+      data[i] = this->data[i].clone();
+    }
+    return UniquePtr(this->allocator, data);
   }
 
 private:
