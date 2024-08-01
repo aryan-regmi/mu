@@ -2,30 +2,31 @@
 #define MU_UNIQUE_PTR_H
 
 #include "mu/cloneable.h"
-#include "mu/mem/allocator.h" // Allocator
-#include "mu/mem/c_allocator.h"
-#include "mu/primitives.h" // usize
-#include "mu/slice.h"      // Slice
-#include <memory>
-#include <optional>
-#include <type_traits>
-#include <utility> // forward, swap
-#include <variant>
+#include "mu/mem/allocator.h"   // Allocator
+#include "mu/mem/c_allocator.h" // CAllocator
+#include "mu/primitives.h"      // usize, u64
+#include "mu/slice.h"           // Slice
+#include <type_traits>          // is_same_v
+#include <utility>              // forward, swap
 
 namespace mu {
 
 namespace internal::helper {
 
+/// TODO: Replace with check for static allocator instead!!
+///   - Must be default constructible
+///   - Must inherit base type `StaticAllocator`
+///   - Move this to `allocator.h` instead!
 template <typename T>
 concept IsCAllocator = std::is_same_v<T, mem::CAllocator>;
-}
+} // namespace internal::helper
 
 /// A smart pointer that owns and manages another object through a pointer and
 /// disposes of that object when the `UniquePtr` goes out of scope.
 ///
 /// # Note
 /// Manages a single object of type `T`.
-template <typename T, class Alloc = mem::CAllocator> class UniquePtr {
+template <typename T, class Allocator = mem::CAllocator> class UniquePtr {
   struct empty {};
 
 public:
@@ -37,7 +38,7 @@ public:
   static auto create(mem::Allocator* allocator = nullptr,
                      Args... args) -> UniquePtr<T> {
     T* data;
-    if constexpr (internal::helper::IsCAllocator<Alloc>) {
+    if constexpr (internal::helper::IsCAllocator<Allocator>) {
       data  = mem::CAllocator().create<T>();
       *data = T{std::forward<Args>(args)...};
       return UniquePtr(empty{}, data);
@@ -78,7 +79,7 @@ public:
 
   /// Destroys the managed object.
   ~UniquePtr() {
-    if constexpr (internal::helper::IsCAllocator<Alloc>) {
+    if constexpr (internal::helper::IsCAllocator<Allocator>) {
       mem::CAllocator().destroy(this->data);
     } else {
       this->allocator->destroy(this->data);
@@ -130,7 +131,7 @@ public:
   auto clone() const -> UniquePtr<T>
     requires(Cloneable<T>)
   {
-    if constexpr (internal::helper::IsCAllocator<Alloc>) {
+    if constexpr (internal::helper::IsCAllocator<Allocator>) {
       T* data = mem::CAllocator().template create<T>();
       *data   = this->data->clone();
       return UniquePtr(empty{}, data);
@@ -142,11 +143,11 @@ public:
   }
 
 private:
-  using AllocT =
-      std::conditional_t<std::is_same_v<Alloc, mem::CAllocator>, empty, Alloc*>;
-
-  [[no_unique_address]] AllocT allocator;
-  T*                           data;
+  using AllocatorType =
+      std::conditional_t<std::is_same_v<Allocator, mem::CAllocator>, empty,
+                         Allocator*>;
+  [[no_unique_address]] AllocatorType allocator;
+  T*                                  data;
 };
 
 /// A smart pointer that owns and manages another object through a pointer and
