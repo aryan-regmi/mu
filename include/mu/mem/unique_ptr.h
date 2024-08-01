@@ -3,37 +3,57 @@
 
 #include "mu/cloneable.h"
 #include "mu/mem/allocator.h" // Allocator
-#include "mu/primitives.h"    // usize
-#include "mu/slice.h"         // Slice
-#include <utility>            // forward, swap
-
-// TODO: Parameterize UniquePtr by Allocator!
-//  - create will take in a parameterized `Allocator* allocator = nullptr`:
-//    - if it is nullptr, use `Allocator()` for [de]allocations
-//    - store it as variant<monostate, Allocator> so no extra space required
+#include "mu/mem/c_allocator.h"
+#include "mu/primitives.h" // usize
+#include "mu/slice.h"      // Slice
+#include <memory>
+#include <optional>
+#include <type_traits>
+#include <utility> // forward, swap
+#include <variant>
 
 namespace mu {
+
+namespace internal::helper {
+
+template <typename T>
+concept IsCAllocator = std::is_same_v<T, mem::CAllocator>;
+}
 
 /// A smart pointer that owns and manages another object through a pointer and
 /// disposes of that object when the `UniquePtr` goes out of scope.
 ///
 /// # Note
 /// Manages a single object of type `T`.
-template <typename T> class UniquePtr {
+template <typename T, class Alloc = mem::CAllocator> class UniquePtr {
+  struct empty {};
+
 public:
   UniquePtr(const UniquePtr&)                    = delete;
   auto operator=(const UniquePtr&) -> UniquePtr& = delete;
 
   /// Constructs an object of type `T` and wraps it in a `UniquePtr`.
   template <typename... Args>
-  static auto create(mem::Allocator* allocator, Args... args) -> UniquePtr<T> {
-    T* data = allocator->create<T>();
-    *data   = T{std::forward<Args>(args)...};
-    return UniquePtr(allocator, data);
+  static auto create(mem::Allocator* allocator = nullptr,
+                     Args... args) -> UniquePtr<T> {
+    T* data;
+    if constexpr (internal::helper::IsCAllocator<Alloc>) {
+      data  = mem::CAllocator().create<T>();
+      *data = T{std::forward<Args>(args)...};
+      return UniquePtr(empty{}, data);
+    } else {
+      data  = allocator->create<T>();
+      *data = T{std::forward<Args>(args)...};
+      return UniquePtr(allocator, data);
+    }
   }
 
   /// Creates a `UniquePtr` from a pointer (`data`) allocated using `allocator`.
   explicit UniquePtr(mem::Allocator* allocator, T* data)
+      : allocator{allocator}, data{data} {}
+
+  // FIXME: Make private
+  explicit UniquePtr(empty allocator, T* data)
       : allocator{allocator}, data{data} {}
 
   /// Creates a `UniquePtr` by transferring ownership from `other` to `this` and
@@ -57,7 +77,13 @@ public:
   }
 
   /// Destroys the managed object.
-  ~UniquePtr() { this->allocator->destroy(this->data); }
+  ~UniquePtr() {
+    if constexpr (internal::helper::IsCAllocator<Alloc>) {
+      mem::CAllocator().destroy(this->data);
+    } else {
+      this->allocator->destroy(this->data);
+    }
+  }
 
   ///  Returns the object owned by `this`.
   constexpr auto     operator*() const noexcept -> T& { return *data; }
@@ -79,7 +105,7 @@ public:
   auto               get() const -> T* { return data; }
 
   /// Returns a pointer to the managed object and releases the ownership.
-  auto               release() noexcept -> T* {
+  [[nodiscard]] auto release() noexcept -> T* {
     T* res = nullptr;
     std::swap(res, this->data);
     return res;
@@ -104,14 +130,23 @@ public:
   auto clone() const -> UniquePtr<T>
     requires(Cloneable<T>)
   {
-    T* data = this->allocator->template create<T>();
-    *data   = this->data->clone();
-    return UniquePtr(this->allocator, data);
+    if constexpr (internal::helper::IsCAllocator<Alloc>) {
+      T* data = mem::CAllocator().template create<T>();
+      *data   = this->data->clone();
+      return UniquePtr(empty{}, data);
+    } else {
+      T* data = this->allocator->template create<T>();
+      *data   = this->data->clone();
+      return UniquePtr(this->allocator, data);
+    }
   }
 
 private:
-  mem::Allocator* allocator;
-  T*              data;
+  using AllocT =
+      std::conditional_t<std::is_same_v<Alloc, mem::CAllocator>, empty, Alloc*>;
+
+  [[no_unique_address]] AllocT allocator;
+  T*                           data;
 };
 
 /// A smart pointer that owns and manages another object through a pointer and

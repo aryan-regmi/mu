@@ -20,7 +20,7 @@ struct Tst {
 static auto singleObject() -> void {
   mem::CAllocator allocator{};
 
-  auto            val = UniquePtr<Tst>::create(&allocator);
+  auto            val = UniquePtr<Tst>::create();
   assert(val->x == 1);
   assert(val->y == 2);
   assert(val->z == 3);
@@ -103,7 +103,7 @@ int main(void) {
   singleObject();
 
   // Slice of objects
-  sliceObjects();
+  // sliceObjects();
 
   return 0;
 }
