@@ -4,10 +4,11 @@
 #include "mu/cloneable.h"
 #include "mu/mem/allocator.h"   // Allocator
 #include "mu/mem/c_allocator.h" // CAllocator
-#include "mu/primitives.h"      // usize, u64
-#include "mu/slice.h"           // Slice
-#include <type_traits>          // is_same_v
-#include <utility>              // forward, swap
+#include "mu/panic.h"
+#include "mu/primitives.h" // usize, u64
+#include "mu/slice.h"      // Slice
+#include <type_traits>     // is_same_v
+#include <utility>         // forward, swap
 
 namespace mu {
 
@@ -17,6 +18,9 @@ namespace internal::helper {
 ///   - Must be default constructible
 ///   - Must inherit base type `StaticAllocator`
 ///   - Move this to `allocator.h` instead!
+///
+/// TODO: Add check to `UniquePtr` allocator parameter:
+///   - Should be an `mem::Allocator`
 template <typename T>
 concept IsCAllocator = std::is_same_v<T, mem::CAllocator>;
 } // namespace internal::helper
@@ -39,7 +43,7 @@ public:
                      Args... args) -> UniquePtr<T> {
     T* data;
     if constexpr (internal::helper::IsCAllocator<Allocator>) {
-      data  = mem::CAllocator().create<T>();
+      data  = Allocator().template create<T>();
       *data = T{std::forward<Args>(args)...};
       return UniquePtr(empty{}, data);
     } else {
@@ -80,7 +84,7 @@ public:
   /// Destroys the managed object.
   ~UniquePtr() {
     if constexpr (internal::helper::IsCAllocator<Allocator>) {
-      mem::CAllocator().destroy(this->data);
+      Allocator().destroy(this->data);
     } else {
       this->allocator->destroy(this->data);
     }
@@ -132,7 +136,7 @@ public:
     requires(Cloneable<T>)
   {
     if constexpr (internal::helper::IsCAllocator<Allocator>) {
-      T* data = mem::CAllocator().template create<T>();
+      T* data = Allocator().template create<T>();
       *data   = this->data->clone();
       return UniquePtr(empty{}, data);
     } else {
@@ -143,6 +147,8 @@ public:
   }
 
 private:
+  /// TODO: Replace the `is_same_v` check with `isStaticAllocator` (see todo
+  /// above)
   using AllocatorType =
       std::conditional_t<std::is_same_v<Allocator, mem::CAllocator>, empty,
                          Allocator*>;
