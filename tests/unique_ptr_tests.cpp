@@ -2,8 +2,11 @@
 #include "mu/io/file.h"
 #include "mu/mem/c_allocator.h"
 #include "mu/mem/unique_ptr.h"
+#include "mu/optional.h"
+#include "mu/result.h"
 #include <cassert>
 #include <cstdio>
+#include <optional>
 #include <utility>
 
 using namespace mu;

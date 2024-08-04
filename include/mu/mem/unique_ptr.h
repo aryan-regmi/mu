@@ -57,7 +57,6 @@ public:
   explicit UniquePtr(mem::Allocator* allocator, T* data)
       : allocator{allocator}, data{data} {}
 
-  // FIXME: Make private
   explicit UniquePtr(empty allocator, T* data)
       : allocator{allocator}, data{data} {}
 
@@ -91,21 +90,25 @@ public:
   }
 
   ///  Returns the object owned by `this`.
-  constexpr auto     operator*() const noexcept -> T& { return *data; }
+  constexpr auto     operator*() const noexcept -> T& { return *this->data; }
 
   ///  Returns a pointer to the object owned by `this`.
-  constexpr auto     operator->() const noexcept -> T* { return data; }
+  constexpr auto     operator->() const noexcept -> T* { return this->data; }
 
   /// Checks if `this` owns an object.
   ///
   /// Returns `true` if `this.data != nullptr`.
-  constexpr explicit operator bool() const noexcept { return data; }
+  constexpr explicit operator bool() const noexcept {
+    return this->data != nullptr;
+  }
 
   /// Checks if `this` owns an object.
   ///
   /// Returns `true` if `this.data != nullptr`.
   auto               valid() const -> bool { return data != nullptr; }
 
+  // TODO: Rename to unwrap!
+  //
   /// Get the data stored in the `UniquePtr`.
   auto               get() const -> T* { return data; }
 
