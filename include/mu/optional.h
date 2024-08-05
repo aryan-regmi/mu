@@ -208,6 +208,8 @@ public:
     return func();
   }
 
+  // TODO: Add `except` method
+
   /// Maps an `Optional<T>` to an `Optional<U>` by calling `func` on the
   /// contained value.
   ///

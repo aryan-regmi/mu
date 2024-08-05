@@ -6,6 +6,8 @@
 
 namespace mu::common {
 
+// TODO: Make **all** constructor calls consistent (use brace-initialization)
+
 /// Index out of bounds exception.
 class IndexOutOfBounds : std::exception {
 public:
