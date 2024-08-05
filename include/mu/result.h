@@ -66,6 +66,17 @@ template <typename T> struct Ok {
   T val;
 };
 
+template <> struct Ok<void> {
+  Ok()                                     = default;
+  ~Ok() noexcept                           = default;
+  Ok(Ok&& other) noexcept                  = default;
+  Ok(const Ok& other) noexcept             = default;
+  Ok&  operator=(const Ok& other) noexcept = default;
+  Ok&  operator=(Ok&& other) noexcept      = default;
+
+  auto clone() const -> Ok<void> { return Ok<void>(); }
+};
+
 template <typename E> struct Err {
   Err()                     = delete;
   ~Err() noexcept           = default;
@@ -257,7 +268,7 @@ public:
     if constexpr (Cloneable<E>) {
       // Clone error if it is cloneable
       return Result<U, E>(val.clone());
-    } else if constexpr (Copyable<T>) {
+    } else if constexpr (Copyable<E>) {
       // Copy the error if copyable
       return Result<U, E>(Err<E>{val});
     }
@@ -281,7 +292,7 @@ public:
     if constexpr (Cloneable<E>) {
       // Clone error if it is cloneable
       return Result<U, E>(val.clone());
-    } else if constexpr (Copyable<T>) {
+    } else if constexpr (Copyable<E>) {
       // Copy the error if copyable
       return Result<U, E>(Err<E>{val});
     }
@@ -435,6 +446,203 @@ public:
 
 private:
   std::variant<Ok<T>, Err<E>> val;
+};
+
+template <typename E> struct Result<void, E> {
+public:
+  Result()                         = delete;
+  Result(const Result&)            = delete;
+  Result& operator=(const Result&) = delete;
+
+  template <typename... Args>
+  static auto createErr(Args... args) noexcept -> Result<void, E> {
+    return Result(Err<E>::create(std::forward(args)...));
+  }
+
+  Result(Ok<void>&& /*ok_val*/) noexcept : val{Ok<void>()} {}
+
+  Result(Err<E>&& err_val) noexcept : val{std::move(err_val)} {}
+
+  Result(Result&& other) noexcept {
+    if (other.isOk()) {
+      this->val = Ok<void>();
+    } else {
+      this->val = std::move(std::get<Err<E>>(other.val));
+    }
+  }
+
+  Result& operator=(Result&& other) noexcept {
+    if (*this == other) {
+      return *this;
+    }
+
+    // Destory current
+    if (this->isErr()) {
+      auto& val = std::move(std::get<Err<E>>(other.val));
+      val.~Err();
+    }
+
+    if (other.isOk()) {
+      this->val = Ok<void>();
+    } else {
+      this->val = std::move(std::get<Err<E>>(other.val));
+    }
+    return *this;
+  }
+
+  constexpr explicit operator bool() const noexcept { return this->isOk(); }
+
+  constexpr auto     isOk() const noexcept -> bool {
+    return this->val.index() == 0;
+  }
+
+  constexpr auto isErr() const noexcept -> bool {
+    return this->val.index() == 1;
+  }
+
+  auto unwrap() const -> void {
+    if (this->isErr()) {
+      throw ResultUnwrapErrException();
+    }
+  }
+
+  auto unwrapErr() const -> const E& {
+    if (this->isErr()) {
+      auto& val = std::get<Err<E>>(this->val);
+      return val.err;
+    }
+    throw ResultUnwrapOkException();
+  }
+
+  auto unwrapErr() -> E& {
+    if (this->isErr()) {
+      auto& val = std::get<Err<E>>(this->val);
+      return val.err;
+    }
+    throw ResultUnwrapOkException();
+  }
+
+  template <typename U, typename F>
+  auto map(F&& func) const -> Result<U, E>
+    requires requires(F&& func, U ret) {
+      requires std::invocable<F>;
+      { func() } -> std::same_as<U>;
+    }
+  {
+    // Call mapping func if `Ok`
+    if (this->isOk()) {
+      return Result<U, E>(Ok<U>{func()});
+    }
+
+    // Return contained `Err` otherwise
+    const auto& val = std::get<Err<E>>(this->val);
+    if constexpr (Cloneable<E>) {
+      // Clone error if it is cloneable
+      return Result<U, E>(val.clone());
+    } else if constexpr (Copyable<E>) {
+      // Copy the error if copyable
+      return Result<U, E>(Err<E>{val});
+    }
+  }
+
+  template <typename U, typename F>
+  auto map(F&& func) -> Result<U, E>
+    requires requires(F&& func, U ret) {
+      requires std::invocable<F>;
+      { func() } -> std::same_as<U>;
+    }
+  {
+    // Call mapping func if `Ok`
+    if (this->isOk()) {
+      return Result<U, E>(Ok<U>{func()});
+    }
+
+    // Return contained `Err` otherwise
+    auto& val = std::get<Err<E>>(this->val);
+    if constexpr (Cloneable<E>) {
+      // Clone error if it is cloneable
+      return Result<U, E>(val.clone());
+    } else if constexpr (Copyable<E>) {
+      // Copy the error if copyable
+      return Result<U, E>(Err<E>{val});
+    }
+  }
+
+  template <typename E2, typename F>
+  auto mapErr(F&& func) const -> Result<void, E2>
+    requires requires(F&& func, const E& type, E2 ret) {
+      requires std::invocable<F, const E&>;
+      { func(type) } -> std::same_as<E2>;
+    }
+  {
+    // Call mapping func if `Err`
+    if (this->isErr()) {
+      const auto& val = std::get<Err<E>>(this->val);
+      return Result<void, E2>(Err<E2>{func(val.err)});
+    }
+
+    // Return contained `Ok` otherwise
+    return Result<void, E2>(Ok<void>());
+  }
+
+  template <typename E2, typename F>
+  auto mapErr(F&& func) -> Result<void, E2>
+    requires requires(F&& func, E& type, E2 ret) {
+      requires std::invocable<F, E&>;
+      { func(type) } -> std::same_as<E2>;
+    }
+  {
+    // Call mapping func if `Err`
+    if (this->isErr()) {
+      auto& val = std::get<Err<E>>(this->val);
+      return Result<void, E2>(Err<E2>{func(val.err)});
+    }
+
+    // Return contained `Ok` otherwise
+    return Result<void, E2>(Ok<void>());
+  }
+
+  template <typename... Args>
+  auto emplaceErr(Args... args) noexcept -> void
+    requires(noexcept(E{std::forward<Args>(args)...}) && noexcept(~E()))
+  {
+    // Destroy old value
+    if (this->isErr()) {
+      auto& val = std::get<Err<E>>(this->val);
+      val.~Err();
+    }
+
+    // Construct new value
+    this->val = Err<E>{E{std::forward<Args>(args)...}};
+  }
+
+  template <typename... Args> auto emplaceErr(Args... args) -> void {
+    // Destroy old value
+    if (this->isErr()) {
+      auto& val = std::get<Err<E>>(this->val);
+      val.~Err();
+    }
+
+    // Construct new value
+    this->val = Err<E>{E{std::forward<Args>(args)...}};
+  }
+
+  auto clone() const -> Result<void, E> {
+    if (this->isOk()) {
+      return Result<void, E>(Ok<void>());
+    }
+
+    const auto& val = std::get<Err<E>>(this->val);
+    if constexpr (Cloneable<E>) {
+      return Result<void, E>(val.clone());
+    } else if constexpr (Copyable<E>) {
+      return Result<void, E>(Err<E>{val});
+    }
+  }
+
+private:
+  // TODO: Replace w/ monostate?
+  std::variant<Ok<void>, Err<E>> val;
 };
 
 } // namespace mu
