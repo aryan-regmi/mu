@@ -20,6 +20,8 @@ struct OptionUnwrapException : std::exception {
   }
 };
 
+// TODO: Add copy constructor and assignment operator if Copyable<T>
+
 // TODO: Add `IntoIter` mixin (and create an iterator!)
 //
 // TODO: Specialize for Optional<void>.
@@ -181,7 +183,7 @@ public:
   template <typename F>
   auto unwrapOrElse(F&& func) const noexcept -> const T&
     requires requires(F&& func, T type) {
-      std::invocable<F>;
+      requires std::invocable<F>;
       { func() } -> std::same_as<T>;
     }
   {
@@ -198,7 +200,7 @@ public:
   template <typename F>
   auto unwrapOrElse(F&& func) noexcept -> T&
     requires requires(F&& func, T type) {
-      std::invocable<F>;
+      requires std::invocable<F>;
       { func() } -> std::same_as<T>;
     }
   {
@@ -221,7 +223,7 @@ public:
   template <typename U, typename F>
   auto map(F&& func) const -> Optional<U>
     requires requires(F&& func, const T& type, U ret) {
-      std::invocable<F, const T&>;
+      requires std::invocable<F, const T&>;
       { func(type) } -> std::same_as<U>;
     }
   {
@@ -242,7 +244,7 @@ public:
   template <typename U, typename F>
   auto map(F&& func) -> Optional<U>
     requires requires(F&& func, T& type, U ret) {
-      std::invocable<F, T&>;
+      requires std::invocable<F, T&>;
       { func(type) } -> std::same_as<U>;
     }
   {
@@ -333,7 +335,7 @@ public:
   template <typename U, typename F>
   auto andThen(F&& func) const -> Optional<U>
     requires requires(F&& func, const T& type, U ret) {
-      std::invocable<F, const T&>;
+      requires std::invocable<F, const T&>;
       { func(type) } -> std::same_as<U>;
     }
   {
@@ -351,7 +353,7 @@ public:
   template <typename U, typename F>
   auto andThen(F&& func) -> Optional<U>
     requires requires(F&& func, T& type, U ret) {
-      std::invocable<F, T&>;
+      requires std::invocable<F, T&>;
       { func(type) } -> std::same_as<U>;
     }
   {
