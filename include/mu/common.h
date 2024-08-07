@@ -12,6 +12,20 @@ namespace mu::common {
 
 // TODO: Put all common exceptions here!
 
+/// The exception thrown if an allocation failed.
+class OutOfMemoryException : std::exception {
+  explicit OutOfMemoryException(usize allocation_size)
+      : allocation_size{allocation_size} {}
+
+  /// Explains the error.
+  auto what() const throw() -> const_cstr override;
+
+private:
+  static const usize BUFSIZE = 256;
+  u8                 buf[BUFSIZE];
+  usize              allocation_size;
+};
+
 /// The exception thrown if `unwrap` is called on an empty `Optional`.
 struct OptionUnwrapException : std::exception {
   /// Explains the error.
@@ -20,11 +34,13 @@ struct OptionUnwrapException : std::exception {
 
 /// The exception thrown if `unwrap` is called on an `Err`.
 struct ResultUnwrapErrException : std::exception {
+  /// Explains the error.
   auto what() const throw() -> const_cstr override;
 };
 
 /// The exception thrown if `unwrapErr` is called on an `Ok`.
 struct ResultUnwrapOkException : std::exception {
+  /// Explains the error.
   auto what() const throw() -> const_cstr override;
 };
 

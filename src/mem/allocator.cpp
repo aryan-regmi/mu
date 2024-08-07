@@ -10,15 +10,6 @@ constexpr auto isPowerOf2(u8 val) noexcept -> bool {
   ;
 }
 
-auto AllocatorException::what() const throw() -> const_cstr {
-  switch (this->type) {
-  case AllocatorError::OutOfMemory:
-    return "OutOfMemory: Not enough memory available for the allocation";
-  default:
-    return nullptr;
-  }
-}
-
 // NOTE: Impl from:
 // https://johanmabille.github.io/blog/2014/12/06/aligned-memory-allocator/
 auto Allocator::rawAlloc(usize byte_size, u8 align) -> void* {

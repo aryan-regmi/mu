@@ -1,32 +1,14 @@
 #ifndef MU_ALLOCATOR_H
 #define MU_ALLOCATOR_H
 
+#include "mu/common.h"     // OutOfMemoryException
 #include "mu/primitives.h" // usize, u8
 #include "mu/slice.h"      // Slice
-#include <cstdint>         // SIZE_MAX
-#include <exception>       // exception
 
 // TODO: Add thread safe allocator:
 //  https://github.com/ziglang/zig/blob/master/lib/std/heap/ThreadSafeAllocator.zig
 
 namespace mu::mem {
-
-/// Possible `Allocator` errors.
-enum class AllocatorError {
-  OutOfMemory,
-};
-
-/// Exception type thrown by `Allocator` methods.
-class AllocatorException : std::exception {
-public:
-  explicit AllocatorException(AllocatorError type) : type{type} {}
-
-  /// Explains the error
-  auto what() const throw() -> const_cstr override;
-
-private:
-  AllocatorError type;
-};
 
 class Allocator {
 public:
@@ -97,7 +79,7 @@ private:
 
     T* ptr = reinterpret_cast<T*>(this->rawAlloc(sizeof(T) * len, align));
     if (ptr == nullptr) {
-      throw AllocatorException(AllocatorError::OutOfMemory);
+      throw common::OutOfMemoryException(sizeof(T) * len);
     }
     return Slice(ptr, len, align);
   }

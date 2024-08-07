@@ -26,4 +26,14 @@ auto ResultUnwrapOkException::what() const throw() -> const_cstr {
          "`Ok`; use `isErr` to check if the result is an `Err` type first";
 }
 
+auto OutOfMemoryException::what() const throw() -> const_cstr {
+  const_cstr str     = reinterpret_cast<const_cstr>(this->buf);
+  usize      written = sprintf(const_cast<cstr>(str),
+                               "OutOfMemory: Not enough memory available for the "
+                                    "allocation of %zu bytes",
+                               this->allocation_size);
+  assert(written != 0);
+  return str;
+}
+
 } // namespace mu::common
