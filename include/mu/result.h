@@ -6,12 +6,11 @@
 #include "mu/primitives.h"
 #include <algorithm>
 #include <exception>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
 namespace mu {
-
-// TODO: Add doc comments
 
 // TODO: Add tests
 
@@ -32,6 +31,7 @@ struct ResultUnwrapOkException : std::exception {
   }
 };
 
+/// Represents a success value in `Result<T, E>`.
 template <typename T> struct Ok : Clone<Ok<T>> {
   Ok()                    = delete;
   ~Ok() noexcept          = default;
@@ -67,6 +67,7 @@ private:
   }
 };
 
+/// Represents a success value in `Result<void, E>`.
 template <> struct Ok<void> {
   Ok()                                    = default;
   ~Ok() noexcept                          = default;
@@ -76,6 +77,7 @@ template <> struct Ok<void> {
   Ok& operator=(Ok&& other) noexcept      = default;
 };
 
+/// Represents an error value in `Result<T, E>`.
 template <typename E> struct Err : Clone<Err<E>> {
   Err()                     = delete;
   ~Err() noexcept           = default;
@@ -113,27 +115,34 @@ private:
 
 // TODO: Add `IntoIter` mixin (and create an iterator!)
 //
-// TODO: Specialize for Result<void, E>.
+/// Represents either success (`Ok<T>`) or failure (`Err<E>`).
 template <typename T, typename E> class Result : Clone<Result<T, E>> {
 public:
+  // TODO: Add copy constructors if T and E are copyable
+
   Result()                         = delete;
   Result(const Result&)            = delete;
   Result& operator=(const Result&) = delete;
 
+  /// Creates an `Ok<T>` in-place.
   template <typename... Args>
   static auto create(Args... args) noexcept -> Result<T, E> {
     return Result(Ok<T>::create(std::forward(args)...));
   }
 
+  /// Creates an `Err<E>` in-place.
   template <typename... Args>
   static auto createErr(Args... args) noexcept -> Result<T, E> {
     return Result(Err<E>::create(std::forward(args)...));
   }
 
+  /// Move constructs an `Ok<T>` value.
   Result(Ok<T>&& ok_val) noexcept : val{std::move(ok_val)} {}
 
+  /// Move constructs an `Err<E>` value.
   Result(Err<E>&& err_val) noexcept : val{std::move(err_val)} {}
 
+  /// Move constructs a `Result<T, E>` from `other`.
   Result(Result&& other) noexcept {
     if (other.isOk()) {
       this->val = std::move(std::get<Ok<T>>(other.val));
@@ -142,7 +151,8 @@ public:
     }
   }
 
-  Result& operator=(Result&& other) noexcept {
+  /// Move assigns a `Result<T, E>` from `other`.
+  auto operator=(Result&& other) noexcept -> Result& {
     if (*this == other) {
       return *this;
     }
@@ -164,16 +174,47 @@ public:
     return *this;
   }
 
+  /// Destroys the contained value.
+  ~Result() noexcept
+    requires(noexcept(~T()) && noexcept(~E()))
+  {
+    if (this->isOk()) {
+      auto& val = std::get<Ok<T>>(this->val);
+      val.~Ok();
+    } else {
+      auto& err = std::get<Err<E>>(this->val);
+      err.~Err();
+    }
+  }
+
+  /// Destroys the contained value.
+  ~Result() {
+    if (this->isOk()) {
+      auto& val = std::get<Ok<T>>(this->val);
+      val.~Ok();
+    } else {
+      auto& err = std::get<Err<E>>(this->val);
+      err.~Err();
+    }
+  }
+
+  /// Returns `true` if the value is `Ok`.
   constexpr explicit operator bool() const noexcept { return this->isOk(); }
 
+  /// Returns `true` if the value is `Ok`.
   constexpr auto     isOk() const noexcept -> bool {
     return this->val.index() == 0;
   }
 
+  /// Returns `true` if the value is `Err`.
   constexpr auto isErr() const noexcept -> bool {
     return this->val.index() == 1;
   }
 
+  /// Returns the contained `Ok` value.
+  ///
+  /// ## Note
+  /// This will throw an `ResultUnwrapErrException` if the value is `Err`.
   auto unwrap() const -> const T& {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
@@ -182,6 +223,10 @@ public:
     throw ResultUnwrapErrException();
   }
 
+  /// Returns the contained `Ok` value.
+  ///
+  /// ## Note
+  /// This will throw an `ResultUnwrapErrException` if the value is `Err`.
   auto unwrap() -> T& {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
@@ -190,6 +235,10 @@ public:
     throw ResultUnwrapErrException();
   }
 
+  /// Returns the contained `Err` value.
+  ///
+  /// ## Note
+  /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
   auto unwrapErr() const -> const E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
@@ -198,6 +247,10 @@ public:
     throw ResultUnwrapOkException();
   }
 
+  /// Returns the contained `Err` value.
+  ///
+  /// ## Note
+  /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
   auto unwrapErr() -> E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
@@ -206,6 +259,7 @@ public:
     throw ResultUnwrapOkException();
   }
 
+  /// Returns the contained `Ok` value or the provided default.
   auto unwrapOr(T&& default_val) const noexcept -> const T& {
     if (this->isOk()) {
       const auto& val = std::get<Ok<T>>(this->val);
@@ -214,6 +268,7 @@ public:
     return default_val;
   }
 
+  /// Returns the contained `Ok` value or the provided default.
   auto unwrapOr(T&& default_val) noexcept -> T& {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
@@ -222,6 +277,8 @@ public:
     return default_val;
   }
 
+  /// Returns the contained `Ok` value or calculates it from the provided
+  /// function.
   template <typename F>
   auto unwrapOrElse(F&& func) const noexcept -> const T&
     requires requires(F&& func, T type) {
@@ -236,6 +293,8 @@ public:
     return func();
   }
 
+  /// Returns the contained `Ok` value or calculates it from the provided
+  /// function.
   template <typename F>
   auto unwrapOrElse(F&& func) noexcept -> T&
     requires requires(F&& func, T type) {
@@ -250,6 +309,8 @@ public:
     return func();
   }
 
+  /// Maps a `Result<T, E>` to `Result<U, E>` by applying the function to the
+  /// contained `Ok` value, leaving an `Err` value untouched.
   template <typename U, typename F>
   auto map(F&& func) const -> Result<U, E>
     requires requires(F&& func, const T& type, U ret) {
@@ -265,15 +326,15 @@ public:
 
     // Return contained `Err` otherwise
     const auto& val = std::get<Err<E>>(this->val);
-    if constexpr (Cloneable<E>) {
-      // Clone error if it is cloneable
-      return Result<U, E>(val.clone());
-    } else if constexpr (Copyable<E>) {
-      // Copy the error if copyable
+    if constexpr (Copyable<E>) {
       return Result<U, E>(Err<E>{val});
+    } else if constexpr (Cloneable<E>) {
+      return Result<U, E>(val.clone());
     }
   }
 
+  /// Maps a `Result<T, E>` to `Result<U, E>` by applying the function to the
+  /// contained `Ok` value, leaving an `Err` value untouched.
   template <typename U, typename F>
   auto map(F&& func) -> Result<U, E>
     requires requires(F&& func, T& type, U ret) {
@@ -289,15 +350,15 @@ public:
 
     // Return contained `Err` otherwise
     auto& val = std::get<Err<E>>(this->val);
-    if constexpr (Cloneable<E>) {
-      // Clone error if it is cloneable
-      return Result<U, E>(val.clone());
-    } else if constexpr (Copyable<E>) {
-      // Copy the error if copyable
+    if constexpr (Copyable<E>) {
       return Result<U, E>(Err<E>{val});
+    } else if constexpr (Cloneable<E>) {
+      return Result<U, E>(val.clone());
     }
   }
 
+  /// Maps a `Result<T, E>` to `Result<T, E2>` by applying the function to the
+  /// contained `Err` value, leaving an `Ok` value untouched.
   template <typename E2, typename F>
   auto mapErr(F&& func) const -> Result<T, E2>
     requires requires(F&& func, const E& type, E2 ret) {
@@ -313,15 +374,15 @@ public:
 
     // Return contained `Ok` otherwise
     const auto& val = std::get<Ok<T>>(this->val);
-    if constexpr (Cloneable<T>) {
-      // Clone value if it is cloneable
-      return Result<T, E2>(val.clone());
-    } else if constexpr (Copyable<T>) {
-      // Copy the value if copyable
+    if constexpr (Copyable<T>) {
       return Result<T, E2>(Ok<T>{val});
+    } else if constexpr (Cloneable<T>) {
+      return Result<T, E2>(val.clone());
     }
   }
 
+  /// Maps a `Result<T, E>` to `Result<T, E2>` by applying the function to the
+  /// contained `Err` value, leaving an `Ok` value untouched.
   template <typename E2, typename F>
   auto mapErr(F&& func) -> Result<T, E2>
     requires requires(F&& func, E& type, E2 ret) {
@@ -337,15 +398,14 @@ public:
 
     // Return contained `Ok` otherwise
     auto& val = std::get<Ok<T>>(this->val);
-    if constexpr (Cloneable<T>) {
-      // Clone value if it is cloneable
-      return Result<T, E2>(val.clone());
-    } else if constexpr (Copyable<T>) {
-      // Copy the value if copyable
+    if constexpr (Copyable<T>) {
       return Result<T, E2>(Ok<T>{val});
+    } else if constexpr (Cloneable<T>) {
+      return Result<T, E2>(val.clone());
     }
   }
 
+  /// Creates an `Ok<T>` in-place, and destroys the contained value.
   template <typename... Args>
   auto emplace(Args... args) noexcept -> void
     requires(noexcept(T{std::forward<Args>(args)...}) && noexcept(~T()) &&
@@ -364,6 +424,7 @@ public:
     this->val = Ok<T>{T{std::forward<Args>(args)...}};
   }
 
+  /// Creates an `Ok<T>` in-place, and destroys the contained value.
   template <typename... Args> auto emplace(Args... args) -> void {
     // Destroy old value
     if (this->isOk()) {
@@ -378,6 +439,7 @@ public:
     this->val = Ok<T>{T{std::forward<Args>(args)...}};
   }
 
+  /// Creates an `Err<E>` in-place, and destroys the contained value.
   template <typename... Args>
   auto emplaceErr(Args... args) noexcept -> void
     requires(noexcept(E{std::forward<Args>(args)...}) && noexcept(~T()) &&
@@ -396,6 +458,7 @@ public:
     this->val = Err<E>{E{std::forward<Args>(args)...}};
   }
 
+  /// Creates an `Err<E>` in-place, and destroys the contained value.
   template <typename... Args> auto emplaceErr(Args... args) -> void {
     // Destroy old value
     if (this->isOk()) {
@@ -410,6 +473,9 @@ public:
     this->val = Err<E>{E{std::forward<Args>(args)...}};
   }
 
+  /// Converts a `Result<T, E>` to `Optional<T>`.
+  ///
+  /// Discards the value if it is `Err`.
   auto ok() -> Optional<T> {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
@@ -418,6 +484,9 @@ public:
     return Optional<T>();
   }
 
+  /// Converts a `Result<T, E>` to `Optional<E>`.
+  ///
+  /// Discards the value if it is `Ok`.
   auto err() -> Optional<E> {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
@@ -429,6 +498,7 @@ public:
 private:
   std::variant<Ok<T>, Err<E>> val;
 
+  /// Clones the contained value.
   auto                        cloneImpl() const -> Result<T, E> {
     if (this->isOk()) {
       const auto& val = std::get<Ok<T>>(this->val);
@@ -450,19 +520,25 @@ private:
 
 template <typename E> struct Result<void, E> : Clone<Result<void, E>> {
 public:
+  // TODO: Add copy constructors if T and E are copyable
+
   Result()                         = delete;
   Result(const Result&)            = delete;
   Result& operator=(const Result&) = delete;
 
+  /// Creates an `Err<E>` in-place.
   template <typename... Args>
   static auto createErr(Args... args) noexcept -> Result<void, E> {
     return Result(Err<E>::create(std::forward(args)...));
   }
 
+  /// Move constructs an `Ok<void>` value.
   Result(Ok<void>&& /*ok_val*/) noexcept : val{Ok<void>()} {}
 
+  /// Move constructs an `Err<E>` value.
   Result(Err<E>&& err_val) noexcept : val{std::move(err_val)} {}
 
+  /// Move constructs a `Result<void, E>` from `other`.
   Result(Result&& other) noexcept {
     if (other.isOk()) {
       this->val = Ok<void>();
@@ -471,6 +547,7 @@ public:
     }
   }
 
+  /// Move assigns a `Result<void, E>` from `other`.
   Result& operator=(Result&& other) noexcept {
     if (*this == other) {
       return *this;
@@ -490,22 +567,23 @@ public:
     return *this;
   }
 
+  /// Returns `true` if the value is `Ok`.
   constexpr explicit operator bool() const noexcept { return this->isOk(); }
 
+  /// Returns `true` if the value is `Ok`.
   constexpr auto     isOk() const noexcept -> bool {
     return this->val.index() == 0;
   }
 
+  /// Returns `true` if the value is `Err`.
   constexpr auto isErr() const noexcept -> bool {
     return this->val.index() == 1;
   }
 
-  auto unwrap() const -> void {
-    if (this->isErr()) {
-      throw ResultUnwrapErrException();
-    }
-  }
-
+  /// Returns the contained `Err` value.
+  ///
+  /// ## Note
+  /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
   auto unwrapErr() const -> const E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
@@ -514,6 +592,10 @@ public:
     throw ResultUnwrapOkException();
   }
 
+  /// Returns the contained `Err` value.
+  ///
+  /// ## Note
+  /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
   auto unwrapErr() -> E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
@@ -522,6 +604,8 @@ public:
     throw ResultUnwrapOkException();
   }
 
+  /// Maps a `Result<void, E>` to `Result<U, E>` by applying the function to the
+  /// contained `Ok` value, leaving an `Err` value untouched.
   template <typename U, typename F>
   auto map(F&& func) const -> Result<U, E>
     requires requires(F&& func, U ret) {
@@ -545,6 +629,8 @@ public:
     }
   }
 
+  /// Maps a `Result<void, E>` to `Result<U, E>` by applying the function to the
+  /// contained `Ok` value, leaving an `Err` value untouched.
   template <typename U, typename F>
   auto map(F&& func) -> Result<U, E>
     requires requires(F&& func, U ret) {
@@ -568,6 +654,8 @@ public:
     }
   }
 
+  /// Maps a `Result<void, E>` to `Result<void, E2>` by applying the function to
+  /// the contained `Err` value, leaving an `Ok` value untouched.
   template <typename E2, typename F>
   auto mapErr(F&& func) const -> Result<void, E2>
     requires requires(F&& func, const E& type, E2 ret) {
@@ -585,6 +673,8 @@ public:
     return Result<void, E2>(Ok<void>());
   }
 
+  /// Maps a `Result<void, E>` to `Result<void, E2>` by applying the function to
+  /// the contained `Err` value, leaving an `Ok` value untouched.
   template <typename E2, typename F>
   auto mapErr(F&& func) -> Result<void, E2>
     requires requires(F&& func, E& type, E2 ret) {
@@ -602,6 +692,7 @@ public:
     return Result<void, E2>(Ok<void>());
   }
 
+  /// Creates an `Err<E>` in-place, and destroys the contained value.
   template <typename... Args>
   auto emplaceErr(Args... args) noexcept -> void
     requires(noexcept(E{std::forward<Args>(args)...}) && noexcept(~E()))
@@ -616,6 +707,7 @@ public:
     this->val = Err<E>{E{std::forward<Args>(args)...}};
   }
 
+  /// Creates an `Err<E>` in-place, and destroys the contained value.
   template <typename... Args> auto emplaceErr(Args... args) -> void {
     // Destroy old value
     if (this->isErr()) {
@@ -631,6 +723,7 @@ private:
   // TODO: Replace Ok<void> w/ monostate?
   std::variant<Ok<void>, Err<E>> val;
 
+  /// Clones the contained value.
   auto                           cloneImpl() const -> Result<void, E> {
     if (this->isOk()) {
       return Result<void, E>(Ok<void>());
