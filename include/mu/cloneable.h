@@ -13,9 +13,8 @@ concept Cloneable = requires(const T self) {
   { self.clone() } -> std::same_as<T>;
 };
 
-// TODO: Add `is_copy_assignable_v` to `Copyable`?
 template <typename T>
-concept Copyable = std::is_copy_constructible_v<T> && !Cloneable<T>;
+concept Copyable = std::is_trivially_copyable_v<T>;
 
 } // namespace mu
 
