@@ -2,34 +2,13 @@
 #define MU_RESULT_H
 
 #include "mu/cloneable.h" // Cloneable, Copyable
-#include "mu/optional.h"
-#include "mu/primitives.h"
-#include <algorithm>
-#include <exception>
-#include <type_traits>
-#include <utility>
-#include <variant>
+#include "mu/optional.h"  // Optional
+#include <utility>        // move, forward
+#include <variant>        // variant, get
 
 namespace mu {
 
 // TODO: Add tests
-
-/// The exception thrown if `unwrap` is called on an `Err`.
-struct ResultUnwrapErrException : std::exception {
-  auto what() const throw() -> const_cstr override {
-    return "ResultUnwrapErrException: Called `unwrap` on result containing an "
-           "`Err`; use `isOk` to check if the result is an `Ok` type first";
-  }
-};
-
-/// The exception thrown if `unwrapErr` is called on an `Ok`.
-struct ResultUnwrapOkException : std::exception {
-  auto what() const throw() -> const_cstr override {
-    return "ResultUnwrapOkException: Called `unwrapErr` on result containing "
-           "an "
-           "`Ok`; use `isErr` to check if the result is an `Err` type first";
-  }
-};
 
 /// Represents a success value in `Result<T, E>`.
 template <typename T> struct Ok : Clone<Ok<T>> {
@@ -222,7 +201,7 @@ public:
       auto& val = std::get<Ok<T>>(this->val);
       return val.val;
     }
-    throw ResultUnwrapErrException();
+    throw common::ResultUnwrapErrException();
   }
 
   /// Returns the contained `Ok` value.
@@ -234,7 +213,7 @@ public:
       auto& val = std::get<Ok<T>>(this->val);
       return val.val;
     }
-    throw ResultUnwrapErrException();
+    throw common::ResultUnwrapErrException();
   }
 
   /// Returns the contained `Err` value.
@@ -246,7 +225,7 @@ public:
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
     }
-    throw ResultUnwrapOkException();
+    throw common::ResultUnwrapOkException();
   }
 
   /// Returns the contained `Err` value.
@@ -258,7 +237,7 @@ public:
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
     }
-    throw ResultUnwrapOkException();
+    throw common::ResultUnwrapOkException();
   }
 
   /// Returns the contained `Ok` value or the provided default.
@@ -593,7 +572,7 @@ public:
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
     }
-    throw ResultUnwrapOkException();
+    throw common::ResultUnwrapOkException();
   }
 
   /// Returns the contained `Err` value.
@@ -605,7 +584,7 @@ public:
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
     }
-    throw ResultUnwrapOkException();
+    throw common::ResultUnwrapOkException();
   }
 
   /// Maps a `Result<void, E>` to `Result<U, E>` by applying the function to the

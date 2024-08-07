@@ -1,24 +1,15 @@
 #ifndef MU_OPTIONAL_H
 #define MU_OPTIONAL_H
 
-#include "mu/cloneable.h"  // Cloneable, Clone
-#include "mu/primitives.h" // const_cstr
-#include <concepts>        // same_as
-#include <exception>       // noexcept, exception
-#include <type_traits>     // is_trivially_destructible_v
-#include <utility>         // move
+#include "mu/cloneable.h" // Cloneable, Clone
+#include "mu/common.h"    // OptionUnwrapException
+#include <concepts>       // same_as
+#include <type_traits>    // is_trivially_destructible_v
+#include <utility>        // move
 
 namespace mu {
 
 // TODO: Add tests
-
-/// The exception thrown if `unwrap` is called on an empty `Optional`.
-struct OptionUnwrapException : std::exception {
-  auto what() const throw() -> const_cstr override {
-    return "OptionUnwrapException: Called `unwrap` on an empty optional; use "
-           "`isValid` to check if the optional value exists first";
-  }
-};
 
 // TODO: Add `IntoIter` mixin (and create an iterator!)
 //
@@ -148,7 +139,7 @@ public:
     if (this->valid) {
       return this->some;
     }
-    throw OptionUnwrapException();
+    throw common::OptionUnwrapException();
   }
 
   /// Get the value stored in the `Optional`.
@@ -159,7 +150,7 @@ public:
     if (this->valid) {
       return this->some;
     }
-    throw OptionUnwrapException();
+    throw common::OptionUnwrapException();
   }
 
   /// Get the contained value or return the provided default.

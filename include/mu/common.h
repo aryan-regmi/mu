@@ -4,13 +4,32 @@
 #include "mu/primitives.h" // usize, u8
 #include <exception>       // exception
 
+// TODO: Make **all** constructor calls consistent (use brace-initialization)
+//
+// TODO: Put all exception impls in cpp file!
+
 namespace mu::common {
 
-// TODO: Make **all** constructor calls consistent (use brace-initialization)
+// TODO: Put all common exceptions here!
+
+/// The exception thrown if `unwrap` is called on an empty `Optional`.
+struct OptionUnwrapException : std::exception {
+  /// Explains the error.
+  auto what() const throw() -> const_cstr override;
+};
+
+/// The exception thrown if `unwrap` is called on an `Err`.
+struct ResultUnwrapErrException : std::exception {
+  auto what() const throw() -> const_cstr override;
+};
+
+/// The exception thrown if `unwrapErr` is called on an `Ok`.
+struct ResultUnwrapOkException : std::exception {
+  auto what() const throw() -> const_cstr override;
+};
 
 /// Index out of bounds exception.
-class IndexOutOfBounds : std::exception {
-public:
+struct IndexOutOfBounds : std::exception {
   explicit IndexOutOfBounds(usize idx, usize len) : idx{idx}, len{len} {}
 
   /// Explains the error.
