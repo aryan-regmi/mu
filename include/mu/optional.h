@@ -4,17 +4,13 @@
 #include "mu/cloneable.h" // Cloneable, Clone
 #include "mu/common.h"    // OptionUnwrapException
 #include <concepts>       // same_as
-#include <type_traits>    // is_trivially_destructible_v
 #include <utility>        // move
+#include <variant>
 
 namespace mu {
 
 // TODO: Add tests
 
-// TODO: Add `IntoIter` mixin (and create an iterator!)
-//
-// TODO: Specialize for Optional<void>.
-//
 /// An optional type that represents either a value of type `T` or an empty
 /// value.
 template <typename T> class Optional : Clone<Optional<T>> {
@@ -40,21 +36,20 @@ public:
   }
 
   /// Constructs an `Optional` value that contains nothing (is empty).
-  explicit Optional() noexcept : none{false}, valid{false} {}
+  explicit Optional() noexcept = default;
 
   /// Move constructs an optional value containing `val`.
-  explicit Optional(T&& val) noexcept : some{std::move(val)}, valid{true} {}
+  explicit Optional(T&& val) noexcept : val{std::move(val)} {}
 
   /// Creates an `Optional` by transferring ownership from `other` to `this` and
   /// destroys `other`.
   Optional(Optional&& other) noexcept {
-    this->valid = other.valid;
-    if (other.valid) {
-      this->some = std::move(other.some);
+    if (other.isValid()) {
+      this->val = std::get<T>(std::move(other.val));
     } else {
-      this->dummy = 0;
+      this->val = std::monostate();
     }
-    other.valid = false;
+    other.val = std::monostate();
   }
 
   /// Move assignment operator.
@@ -63,81 +58,77 @@ public:
     requires(noexcept(~T()))
   {
     // Destroy contained object
-    if (this->valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
 
-    /// Move `other`'s object if it exists
-    this->valid = other.valid;
-    if (other.valid) {
-      this->some = std::move(other.val);
+    // Move `other`'s object if it exists
+    if (other.isValid()) {
+      this->val = std::get<T>(std::move(other.val));
     } else {
-      this->dummy = false;
+      this->val = std::monostate();
     }
-    other.valid = false;
+    other.val = std::monostate();
+
+    return *this;
   }
 
   /// Move assignment operator.
   /// Transfers the object contained from `other` to `this`.
   auto operator=(Optional&& other) -> Optional& {
     // Destroy contained object
-    if (this->valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
 
-    /// Move `other`'s object if it exists
-    this->valid = other.valid;
-    if (other.valid) {
-      this->some = std::move(other.val);
+    // Move `other`'s object if it exists
+    if (other.isValid()) {
+      this->val = std::get<T>(std::move(other.val));
     } else {
-      this->dummy = false;
+      this->val = std::monostate();
     }
-    other.valid = false;
+    other.val = std::monostate();
+
+    return *this;
   }
-
-  /// Destroys the contained object.
-  ~Optional() noexcept
-    requires(std::is_trivially_destructible_v<T> && noexcept(~T()))
-  = default;
-
-  /// Destroys the contained object.
-  ~Optional()
-    requires(std::is_trivially_destructible_v<T>)
-  = default;
 
   /// Destroys the contained object.
   ~Optional() noexcept
     requires(noexcept(~T()))
   {
-    if (valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
   }
 
   /// Destroys the contained object.
   ~Optional() {
-    if (valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
   }
 
   /// Checks if `this` is a valid optional.
   ///
-  /// Returns `true` if `this.valid == true`.
-  constexpr explicit operator bool() const noexcept { return this->valid; }
+  /// Returns `true` if `this.isValid() == true`.
+  constexpr explicit operator bool() const noexcept { return this->isValid(); }
 
   /// Checks if `this` is a valid optional.
-  ///
-  /// Returns `true` if `this.valid == true`.
-  constexpr auto     isValid() const noexcept -> bool { return this->valid; }
+  constexpr auto     isValid() const noexcept -> bool {
+    return this->val.index() == 1;
+  }
 
   /// Get the value stored in the `Optional`.
   ///
   /// ## Note
   /// This will throw an `OptionUnwrapException` if there is no contained value.
-  auto               unwrap() const -> const T& {
-    if (this->valid) {
-      return this->some;
+  auto unwrap() const -> const T& {
+    if (this->isValid()) {
+      return std::get<T>(this->val);
     }
     throw common::OptionUnwrapException();
   }
@@ -147,24 +138,24 @@ public:
   /// ## Note
   /// This will throw an `OptionUnwrapException` if there is no contained value.
   auto unwrap() -> T& {
-    if (this->valid) {
-      return this->some;
+    if (this->isValid()) {
+      return std::get<T>(this->val);
     }
     throw common::OptionUnwrapException();
   }
 
   /// Get the contained value or return the provided default.
   auto unwrapOr(T&& default_val) const noexcept -> const T& {
-    if (this->valid) {
-      return this->some;
+    if (this->isValid()) {
+      return std::get<T>(this->val);
     }
     return default_val;
   }
 
   /// Get the contained value or return the provided default.
   auto unwrapOr(T&& default_val) noexcept -> T& {
-    if (this->valid) {
-      return this->some;
+    if (this->isValid()) {
+      return std::get<T>(this->val);
     }
     return default_val;
   }
@@ -180,8 +171,8 @@ public:
       { func() } -> std::same_as<T>;
     }
   {
-    if (this->valid) {
-      return this->some;
+    if (this->isValid()) {
+      return std::get<T>(this->val);
     }
     return func();
   }
@@ -197,13 +188,11 @@ public:
       { func() } -> std::same_as<T>;
     }
   {
-    if (this->valid) {
-      return this->some;
+    if (this->isValid()) {
+      return std::get<T>(this->val);
     }
     return func();
   }
-
-  // TODO: Add `except` method
 
   /// Maps an `Optional<T>` to an `Optional<U>` by calling `func` on the
   /// contained value.
@@ -220,8 +209,8 @@ public:
       { func(type) } -> std::same_as<U>;
     }
   {
-    if (this->valid) {
-      return Optional<U>(func(this->some));
+    if (this->isValid()) {
+      return Optional<U>(func(std::get<T>(this->val)));
     }
     return Optional<U>();
   }
@@ -241,8 +230,8 @@ public:
       { func(type) } -> std::same_as<U>;
     }
   {
-    if (this->valid) {
-      return Optional<U>(func(this->some));
+    if (this->isValid()) {
+      return Optional<U>(func(std::get<T>(this->val)));
     }
     return Optional<U>();
   }
@@ -253,20 +242,22 @@ public:
   auto replace(T&& val) noexcept -> void
     requires(noexcept(~T()))
   {
-    if (this->valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
-    this->some = std::move(val);
+    this->val = std::move(val);
   }
 
   /// Replaces the current value by `val`.
   ///
   /// This will call the destructor of the contained value.
   auto replace(T&& val) -> void {
-    if (this->valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
-    this->some = std::move(val);
+    this->val = std::move(val);
   }
 
   /// Replaces the current value by constructing a new value of `T` in-place.
@@ -276,28 +267,31 @@ public:
   auto emplace(Args... args) noexcept -> void
     requires(noexcept(T{std::forward<Args>(args)...}) && noexcept(~T()))
   {
-    if (this->valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
-    this->some = T{std::forward<Args>(args)...};
+    this->val = T{std::forward<Args>(args)...};
   }
 
   /// Replaces the current value by constructing a new value of `T` in-place.
   ///
   /// This will call the destructor of the contained value.
   template <typename... Args> auto emplace(Args... args) -> void {
-    if (this->valid) {
-      this->some.~T();
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
     }
-    this->some = T{std::forward<Args>(args)...};
+    this->val = T{std::forward<Args>(args)...};
   }
 
   /// Takes the value out of the `Optional`, leaving an empty optional in its
   /// place.
   auto take() noexcept -> Optional<T> {
-    if (this->valid) {
-      this->valid = false;
-      return Optional(std::move(this->some));
+    if (this->isValid()) {
+      Optional<T> ret{std::get<T>(std::move(this->val))};
+      this->val = std::monostate();
+      return ret;
     }
     return Optional();
   }
@@ -306,17 +300,19 @@ public:
   auto reset() noexcept
     requires(noexcept(~T()))
   {
-    if (this->valid) {
-      this->some.~T();
-      this->valid = false;
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
+      this->val = std::monostate();
     }
   }
 
   /// Destroys any contained value, but leaves the `Optional` intact.
   auto reset() {
-    if (this->valid) {
-      this->some.~T();
-      this->valid = false;
+    if (this->isValid()) {
+      auto& val = std::get<T>(this->val);
+      val.~T();
+      this->val = std::monostate();
     }
   }
 
@@ -332,8 +328,8 @@ public:
       { func(type) } -> std::same_as<U>;
     }
   {
-    if (this->valid) {
-      return func(this->some);
+    if (this->isValid()) {
+      return Optional<U>(func(std::get<T>(this->val)));
     }
     return Optional<U>();
   }
@@ -350,37 +346,28 @@ public:
       { func(type) } -> std::same_as<U>;
     }
   {
-    if (this->valid) {
-      return func(this->some);
+    if (this->isValid()) {
+      return Optional<U>(func(std::get<T>(this->val)));
     }
     return Optional<U>();
   }
 
 private:
-  // TODO: Replace with std::variant
-  union {
-    /// Value for empty optional.
-    bool none;
-
-    /// The valid, contained value.
-    T    some;
-  };
-
-  /// Determines if the optional is empty.
-  bool valid;
+  std::variant<std::monostate, T> val;
 
   /// Clones the contained value.
-  auto cloneImpl() const noexcept -> Optional<T>
+  auto                            cloneImpl() const noexcept -> Optional<T>
     requires(Cloneable<T>)
   {
-    if (!this->valid) {
+    if (!this->isValid()) {
       return Optional();
     }
 
-    if constexpr (Cloneable<T>) {
-      return Optional(this->val.clone());
-    } else {
+    if constexpr (Copyable<T>) {
       return *this;
+    } else if constexpr (Cloneable<T>) {
+      auto& val = std::get<T>(this->val);
+      return Optional(val.clone());
     }
   }
 };
