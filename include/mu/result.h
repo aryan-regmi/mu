@@ -32,7 +32,7 @@ struct ResultUnwrapOkException : std::exception {
   }
 };
 
-template <typename T> struct Ok {
+template <typename T> struct Ok : Clone<Ok<T>> {
   Ok()                    = delete;
   ~Ok() noexcept          = default;
   Ok(Ok&& other) noexcept = default;
@@ -57,27 +57,26 @@ template <typename T> struct Ok {
 
   explicit Ok(T&& val) noexcept : val{std::move(val)} {}
 
-  auto clone() const -> Ok<T>
+  T val;
+
+private:
+  auto cloneImpl() const -> Ok<T>
     requires(Cloneable<T>)
   {
     return Ok<T>(this->val.clone());
   }
-
-  T val;
 };
 
 template <> struct Ok<void> {
-  Ok()                                     = default;
-  ~Ok() noexcept                           = default;
-  Ok(Ok&& other) noexcept                  = default;
-  Ok(const Ok& other) noexcept             = default;
-  Ok&  operator=(const Ok& other) noexcept = default;
-  Ok&  operator=(Ok&& other) noexcept      = default;
-
-  auto clone() const -> Ok<void> { return Ok<void>(); }
+  Ok()                                    = default;
+  ~Ok() noexcept                          = default;
+  Ok(Ok&& other) noexcept                 = default;
+  Ok(const Ok& other) noexcept            = default;
+  Ok& operator=(const Ok& other) noexcept = default;
+  Ok& operator=(Ok&& other) noexcept      = default;
 };
 
-template <typename E> struct Err {
+template <typename E> struct Err : Clone<Err<E>> {
   Err()                     = delete;
   ~Err() noexcept           = default;
   Err(Err&& other) noexcept = default;
@@ -102,19 +101,20 @@ template <typename E> struct Err {
 
   explicit Err(E&& val) noexcept : err{std::move(val)} {}
 
-  auto clone() const -> Err<E>
+  E err;
+
+private:
+  auto cloneImpl() const -> Err<E>
     requires(Cloneable<E>)
   {
     return Err<E>(this->err.clone());
   }
-
-  E err;
 };
 
 // TODO: Add `IntoIter` mixin (and create an iterator!)
 //
 // TODO: Specialize for Result<void, E>.
-template <typename T, typename E> class Result {
+template <typename T, typename E> class Result : Clone<Result<T, E>> {
 public:
   Result()                         = delete;
   Result(const Result&)            = delete;
@@ -426,7 +426,10 @@ public:
     return Optional<E>();
   }
 
-  auto clone() const -> Result<T, E> {
+private:
+  std::variant<Ok<T>, Err<E>> val;
+
+  auto                        cloneImpl() const -> Result<T, E> {
     if (this->isOk()) {
       const auto& val = std::get<Ok<T>>(this->val);
       if constexpr (Cloneable<T>) {
@@ -443,12 +446,9 @@ public:
       }
     }
   }
-
-private:
-  std::variant<Ok<T>, Err<E>> val;
 };
 
-template <typename E> struct Result<void, E> {
+template <typename E> struct Result<void, E> : Clone<Result<void, E>> {
 public:
   Result()                         = delete;
   Result(const Result&)            = delete;
@@ -627,7 +627,11 @@ public:
     this->val = Err<E>{E{std::forward<Args>(args)...}};
   }
 
-  auto clone() const -> Result<void, E> {
+private:
+  // TODO: Replace Ok<void> w/ monostate?
+  std::variant<Ok<void>, Err<E>> val;
+
+  auto                           cloneImpl() const -> Result<void, E> {
     if (this->isOk()) {
       return Result<void, E>(Ok<void>());
     }
@@ -639,10 +643,6 @@ public:
       return Result<void, E>(Err<E>{val});
     }
   }
-
-private:
-  // TODO: Replace w/ monostate?
-  std::variant<Ok<void>, Err<E>> val;
 };
 
 } // namespace mu
