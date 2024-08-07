@@ -118,11 +118,13 @@ private:
 /// Represents either success (`Ok<T>`) or failure (`Err<E>`).
 template <typename T, typename E> class Result : Clone<Result<T, E>> {
 public:
-  // TODO: Add copy constructors if T and E are copyable
-
-  Result()                         = delete;
-  Result(const Result&)            = delete;
-  Result& operator=(const Result&) = delete;
+  Result() = delete;
+  Result(const Result&)
+    requires(Copyable<T> && Copyable<E>)
+  = default;
+  Result& operator=(const Result&)
+    requires(Copyable<T> && Copyable<E>)
+  = default;
 
   /// Creates an `Ok<T>` in-place.
   template <typename... Args>
@@ -520,11 +522,13 @@ private:
 
 template <typename E> struct Result<void, E> : Clone<Result<void, E>> {
 public:
-  // TODO: Add copy constructors if T and E are copyable
-
-  Result()                         = delete;
-  Result(const Result&)            = delete;
-  Result& operator=(const Result&) = delete;
+  Result() = delete;
+  Result(const Result&)
+    requires(Copyable<E>)
+  = default;
+  Result& operator=(const Result&)
+    requires(Copyable<E>)
+  = default;
 
   /// Creates an `Err<E>` in-place.
   template <typename... Args>
