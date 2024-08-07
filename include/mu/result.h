@@ -23,6 +23,7 @@ template <typename T> struct Ok : Clone<Ok<T>> {
   = default;
   Ok& operator=(Ok&& other) noexcept = default;
 
+  /// Creates an `Ok<T>` in-place.
   template <typename... Args>
   static auto create(Args... args) noexcept -> Ok<T>
     requires(noexcept(T{std::forward<Args>(args)...}))
@@ -30,15 +31,19 @@ template <typename T> struct Ok : Clone<Ok<T>> {
     return Ok(T{std::forward<Args>(args)...});
   }
 
+  /// Creates an `Ok<T>` in-place.
   template <typename... Args> static auto create(Args... args) -> Ok<T> {
     return Ok(T{std::forward<Args>(args)...});
   }
 
+  /// Move constructs an `Ok` value containing `val`.
   explicit Ok(T&& val) noexcept : val{std::move(val)} {}
 
+  /// The success value.
   T val;
 
 private:
+  /// Clones the contained object.
   auto cloneImpl() const -> Ok<T>
     requires(Cloneable<T>)
   {
@@ -69,6 +74,7 @@ template <typename E> struct Err : Clone<Err<E>> {
   = default;
   Err& operator=(Err&& other) noexcept = default;
 
+  /// Creates an `Err<E>` in-place.
   template <typename... Args>
   static auto create(Args... args) noexcept -> Err<E>
     requires(noexcept(E{std::forward<Args>(args)...}))
@@ -76,15 +82,19 @@ template <typename E> struct Err : Clone<Err<E>> {
     return Err(E{std::forward<Args>(args)...});
   }
 
+  /// Creates an `Err<E>` in-place.
   template <typename... Args> static auto create(Args... args) -> Err<E> {
     return Err(E{std::forward<Args>(args)...});
   }
 
+  /// Move constructs an `Err` value containing `val`.
   explicit Err(E&& val) noexcept : err{std::move(val)} {}
 
+  /// The error/failure value.
   E err;
 
 private:
+  /// Clones the contained object.
   auto cloneImpl() const -> Err<E>
     requires(Cloneable<E>)
   {
