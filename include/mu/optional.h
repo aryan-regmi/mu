@@ -4,7 +4,6 @@
 #include "mu/cloneable.h" // Cloneable, Clone
 #include "mu/common.h"    // OptionUnwrapException
 #include <concepts>       // same_as
-#include <type_traits>    // is_trivially_destructible_v
 #include <utility>        // move
 #include <variant>
 
@@ -13,8 +12,6 @@ namespace mu {
 // TODO: Add tests
 
 // TODO: Add `IntoIter` mixin (and create an iterator!)
-//
-// TODO: Specialize for Optional<void>.
 //
 /// An optional type that represents either a value of type `T` or an empty
 /// value.
@@ -98,16 +95,6 @@ public:
 
     return *this;
   }
-
-  /// Destroys the contained object.
-  ~Optional() noexcept
-    requires(std::is_trivially_destructible_v<T> && noexcept(~T()))
-  = default;
-
-  /// Destroys the contained object.
-  ~Optional()
-    requires(std::is_trivially_destructible_v<T>)
-  = default;
 
   /// Destroys the contained object.
   ~Optional() noexcept

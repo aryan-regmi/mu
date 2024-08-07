@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstdio>
 #include <utility>
-#include <variant>
 
 using namespace mu;
 
