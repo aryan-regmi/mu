@@ -10,8 +10,8 @@ namespace mu {
 
 namespace internal {
 template <typename T>
-concept HasCloneFn = requires(const T self) {
-  { self.clone() } -> std::same_as<T>;
+concept HasCloneImpl = requires(const T self) {
+  { self.cloneImpl() } -> std::same_as<T>;
 };
 } // namespace internal
 
@@ -19,7 +19,18 @@ template <typename T>
 concept Copyable = std::is_trivially_copyable_v<T>;
 
 template <typename T>
-concept Cloneable = Copyable<T> || internal::HasCloneFn<T>;
+concept Cloneable = Copyable<T> || internal::HasCloneImpl<T>;
+
+template <Cloneable Context> class Clone {
+  auto clone() -> Context {
+    const Context* self = static_cast<const Context*>(this);
+    if constexpr (Copyable<Context>) {
+      return *self;
+    } else {
+      return self->cloneImpl();
+    }
+  }
+};
 
 } // namespace mu
 
