@@ -100,8 +100,6 @@ template <typename E> struct Err : public Clone<Err<E>> {
   E err;
 };
 
-// TODO: Add `IntoIter` mixin (and create an iterator!)
-//
 /// Represents either success (`Ok<T>`) or failure (`Err<E>`).
 template <typename T, typename E> class Result : public Clone<Result<T, E>> {
 public:

@@ -11,8 +11,6 @@ namespace mu {
 
 // TODO: Add tests
 
-// TODO: Add `IntoIter` mixin (and create an iterator!)
-//
 /// An optional type that represents either a value of type `T` or an empty
 /// value.
 template <typename T> class Optional : Clone<Optional<T>> {
