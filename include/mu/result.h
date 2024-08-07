@@ -1,7 +1,7 @@
 #ifndef MU_RESULT_H
 #define MU_RESULT_H
 
-#include "mu/cloneable.h"
+#include "mu/cloneable.h" // Cloneable, Copyable
 #include "mu/optional.h"
 #include "mu/primitives.h"
 #include <algorithm>
