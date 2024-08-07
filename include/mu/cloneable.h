@@ -26,6 +26,7 @@ concept Cloneable = Copyable<T> || internal::HasCloneImpl<T>;
 
 /// Mixin providing the `clone` method for explicit copies.
 template <Cloneable Context> class Clone {
+  /// Clones the object.
   auto clone() -> Context {
     const Context* self = static_cast<const Context*>(this);
     if constexpr (Copyable<Context>) {

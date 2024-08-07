@@ -1,7 +1,7 @@
 #ifndef MU_OPTIONAL_H
 #define MU_OPTIONAL_H
 
-#include "mu/cloneable.h"  // Cloneable
+#include "mu/cloneable.h"  // Cloneable, Clone
 #include "mu/primitives.h" // const_cstr
 #include <concepts>        // same_as
 #include <exception>       // noexcept, exception
@@ -20,18 +20,20 @@ struct OptionUnwrapException : std::exception {
   }
 };
 
-// TODO: Add copy constructor and assignment operator if Copyable<T>
-
 // TODO: Add `IntoIter` mixin (and create an iterator!)
 //
 // TODO: Specialize for Optional<void>.
 //
 /// An optional type that represents either a value of type `T` or an empty
 /// value.
-template <typename T> class Optional {
+template <typename T> class Optional : Clone<Optional<T>> {
 public:
-  Optional(const Optional&)            = delete;
-  Optional& operator=(const Optional&) = delete;
+  Optional(const Optional&) noexcept
+    requires(Copyable<T>)
+  = default;
+  Optional& operator=(const Optional&) noexcept
+    requires(Copyable<T>)
+  = default;
 
   /// Constructs an object of type `T` and wraps it in an `Optional`.
   template <typename... Args>
@@ -363,19 +365,6 @@ public:
     return Optional<U>();
   }
 
-  // TODO: derive for `Cloneable<T>` or `Copyable<T>`
-  //  - have a constexpr if to check for each
-  //
-  /// Clones the contained value.
-  auto clone() const noexcept -> Optional<T>
-    requires(Cloneable<T>)
-  {
-    if (!this->valid) {
-      return Optional();
-    }
-    return Optional(this->val.clone());
-  }
-
 private:
   // TODO: Replace with std::variant
   union {
@@ -388,6 +377,21 @@ private:
 
   /// Determines if the optional is empty.
   bool valid;
+
+  /// Clones the contained value.
+  auto cloneImpl() const noexcept -> Optional<T>
+    requires(Cloneable<T>)
+  {
+    if (!this->valid) {
+      return Optional();
+    }
+
+    if constexpr (Cloneable<T>) {
+      return Optional(this->val.clone());
+    } else {
+      return *this;
+    }
+  }
 };
 
 } // namespace mu
