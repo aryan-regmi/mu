@@ -128,7 +128,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `OptionUnwrapException` if there is no contained value.
-  auto unwrap() const -> const T& {
+  [[nodiscard]] auto unwrap() const -> const T& {
     if (this->isValid()) {
       return std::get<T>(this->val);
     }
@@ -139,7 +139,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `OptionUnwrapException` if there is no contained value.
-  auto unwrap() -> T& {
+  [[nodiscard]] auto unwrap() -> T& {
     if (this->isValid()) {
       return std::get<T>(this->val);
     }
@@ -147,7 +147,7 @@ public:
   }
 
   /// Get the contained value or return the provided default.
-  auto unwrapOr(T&& default_val) const noexcept -> const T& {
+  [[nodiscard]] auto unwrapOr(T&& default_val) const noexcept -> const T& {
     if (this->isValid()) {
       return std::get<T>(this->val);
     }
@@ -155,7 +155,7 @@ public:
   }
 
   /// Get the contained value or return the provided default.
-  auto unwrapOr(T&& default_val) noexcept -> T& {
+  [[nodiscard]] auto unwrapOr(T&& default_val) noexcept -> T& {
     if (this->isValid()) {
       return std::get<T>(this->val);
     }
@@ -167,7 +167,7 @@ public:
   /// ## Note
   /// `F` must have the signature `func() -> T`.
   template <typename F>
-  auto unwrapOrElse(F&& func) const noexcept -> const T&
+  [[nodiscard]] auto unwrapOrElse(F&& func) const noexcept -> const T&
     requires requires(F&& func, T type) {
       requires std::invocable<F>;
       { func() } -> std::same_as<T>;
@@ -184,7 +184,7 @@ public:
   /// ## Note
   /// `F` must have the signature `func() -> T`.
   template <typename F>
-  auto unwrapOrElse(F&& func) noexcept -> T&
+  [[nodiscard]] auto unwrapOrElse(F&& func) noexcept -> T&
     requires requires(F&& func, T type) {
       requires std::invocable<F>;
       { func() } -> std::same_as<T>;

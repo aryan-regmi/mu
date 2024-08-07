@@ -204,7 +204,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `ResultUnwrapErrException` if the value is `Err`.
-  auto unwrap() const -> const T& {
+  [[nodiscard]] auto unwrap() const -> const T& {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
       return val.val;
@@ -216,7 +216,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `ResultUnwrapErrException` if the value is `Err`.
-  auto unwrap() -> T& {
+  [[nodiscard]] auto unwrap() -> T& {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
       return val.val;
@@ -228,7 +228,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
-  auto unwrapErr() const -> const E& {
+  [[nodiscard]] auto unwrapErr() const -> const E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
@@ -240,7 +240,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
-  auto unwrapErr() -> E& {
+  [[nodiscard]] auto unwrapErr() -> E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
@@ -249,7 +249,7 @@ public:
   }
 
   /// Returns the contained `Ok` value or the provided default.
-  auto unwrapOr(T&& default_val) const noexcept -> const T& {
+  [[nodiscard]] auto unwrapOr(T&& default_val) const noexcept -> const T& {
     if (this->isOk()) {
       const auto& val = std::get<Ok<T>>(this->val);
       return val.val;
@@ -258,7 +258,7 @@ public:
   }
 
   /// Returns the contained `Ok` value or the provided default.
-  auto unwrapOr(T&& default_val) noexcept -> T& {
+  [[nodiscard]] auto unwrapOr(T&& default_val) noexcept -> T& {
     if (this->isOk()) {
       auto& val = std::get<Ok<T>>(this->val);
       return val.val;
@@ -269,7 +269,7 @@ public:
   /// Returns the contained `Ok` value or calculates it from the provided
   /// function.
   template <typename F>
-  auto unwrapOrElse(F&& func) const noexcept -> const T&
+  [[nodiscard]] auto unwrapOrElse(F&& func) const noexcept -> const T&
     requires requires(F&& func, T type) {
       requires std::invocable<F>;
       { func() } -> std::same_as<T>;
@@ -285,7 +285,7 @@ public:
   /// Returns the contained `Ok` value or calculates it from the provided
   /// function.
   template <typename F>
-  auto unwrapOrElse(F&& func) noexcept -> T&
+  [[nodiscard]] auto unwrapOrElse(F&& func) noexcept -> T&
     requires requires(F&& func, T type) {
       requires std::invocable<F>;
       { func() } -> std::same_as<T>;
@@ -301,7 +301,7 @@ public:
   /// Maps a `Result<T, E>` to `Result<U, E>` by applying the function to the
   /// contained `Ok` value, leaving an `Err` value untouched.
   template <typename U, typename F>
-  auto map(F&& func) const -> Result<U, E>
+  [[nodiscard]] auto map(F&& func) const -> Result<U, E>
     requires requires(F&& func, const T& type, U ret) {
       requires std::invocable<F, const T&>;
       { func(type) } -> std::same_as<U>;
@@ -575,7 +575,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
-  auto unwrapErr() const -> const E& {
+  [[nodiscard]] auto unwrapErr() const -> const E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
@@ -587,7 +587,7 @@ public:
   ///
   /// ## Note
   /// This will throw an `ResultUnwrapOkException` if the value is `Ok`.
-  auto unwrapErr() -> E& {
+  [[nodiscard]] auto unwrapErr() -> E& {
     if (this->isErr()) {
       auto& val = std::get<Err<E>>(this->val);
       return val.err;
