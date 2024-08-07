@@ -1,8 +1,7 @@
 
 #include "mu/mem/c_allocator.h"
 
-#include "mu/mem/allocator.h" // allocator
-#include "mu/primitives.h"    // usize, u8
+#include "mu/primitives.h" // usize, u8
 
 namespace mu::mem {
 

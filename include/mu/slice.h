@@ -1,11 +1,10 @@
 #ifndef MU_SLICE_H
 #define MU_SLICE_H
 
-#include "mu/cloneable.h"
 #include "mu/common.h"     // IndexOutOfBounds
 #include "mu/primitives.h" // usize, u8< u64
-#include <iostream>
-#include <ostream>
+#include <iostream>        // cout
+#include <ostream>         // endl
 
 namespace mu {
 

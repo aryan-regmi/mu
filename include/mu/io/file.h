@@ -20,7 +20,9 @@ public:
   const_cstr filename;
 };
 
-/// A file.
+// TODO: Handle path, etc instead of raw filenames
+//
+/// Represents a file.
 class File : public Writer {
 public:
   enum class Mode {
@@ -41,8 +43,6 @@ public:
 
   /// Create/open the file with `filename` in the specified mode.
   explicit File(const_cstr filename, Mode mode);
-
-  // TODO: Handle path, etc instead of raw filenames
 
   /// Move construct from `other`.
   File(File&& other) noexcept;

@@ -10,6 +10,8 @@
 namespace mu {
 
 // TODO: Add tests
+//
+// TODO: Add Debug impl
 
 /// An optional type that represents either a value of type `T` or an empty
 /// value.

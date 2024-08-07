@@ -12,20 +12,20 @@
 namespace mu {
 
 /// Concept to check if `T` has `void debug() const` method.
-template <typename T>
+template <class T>
 concept HasDebugFn = requires(const T self) {
   { self.debug() } -> std::same_as<void>;
 };
 
 /// Concept to check if `T` has `void writeFmt(io::Writer&) const` method.
-template <typename T>
+template <class T>
 concept Debuggable = requires(const T self, io::Writer& writer) {
   { self.writeFmt(writer) } -> std::same_as<void>;
 };
 
 /// Mixin that provides debugging functionality to types that satisfy the
 /// `Debuggable` constraint.
-template <typename Context> struct Debug {
+template <class Context> struct Debug {
   auto debug() const -> void
     requires(Debuggable<Context>)
   {
@@ -36,7 +36,7 @@ template <typename Context> struct Debug {
 };
 
 /// Debugs type `T` by calling its `debug()` method.
-template <typename T>
+template <class T>
 auto dbg(T                    val,
          std::source_location loc = std::source_location::current()) -> void
   requires(HasDebugFn<T>)
