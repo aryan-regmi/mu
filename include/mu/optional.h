@@ -15,7 +15,7 @@ namespace mu {
 
 /// An optional type that represents either a value of type `T` or an empty
 /// value.
-template <typename T> class Optional : Clone<Optional<T>> {
+template <class T> class Optional : Clone<Optional<T>> {
 public:
   Optional(const Optional&) noexcept
     requires(Copyable<T>)

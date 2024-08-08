@@ -1,7 +1,9 @@
 #ifndef MU_SLICE_H
 #define MU_SLICE_H
 
-#include "mu/common.h"     // IndexOutOfBounds
+#include "mu/common.h" // IndexOutOfBounds
+#include "mu/iterable.h"
+#include "mu/optional.h"
 #include "mu/primitives.h" // usize, u8< u64
 #include <cstring>         // strlen
 #include <iostream>        // cout
@@ -25,6 +27,35 @@ concept HasDebugFn = requires(const T self) {
 /// from its neighbors.
 template <typename T> class Slice {
 public:
+  class Iter : public Iterator<Iter, T*> {
+  public:
+    Iter() noexcept                             = delete;
+    ~Iter() noexcept                            = default;
+    Iter(const Iter& other) noexcept            = default;
+    Iter& operator=(const Iter& other) noexcept = default;
+
+    using Item                                  = T*;
+
+    auto _nextImpl() -> Optional<Item> {
+      if (this->counter != this->slice->len()) {
+        this->counter += 1;
+        return Optional<Item>(this->slice->ptr_ + (this->counter - 1));
+      }
+      return Optional<Item>();
+    }
+
+  private:
+    Slice* slice;
+    usize  counter;
+
+    friend Slice;
+
+    explicit Iter(Slice* slice, usize counter = 0)
+        : slice{slice}, counter{counter} {}
+  };
+
+  auto iter() -> Iter { return Iter(this); }
+
   explicit Slice() noexcept                     = default;
   ~Slice() noexcept                             = default;
   Slice(const Slice& other) noexcept            = default;

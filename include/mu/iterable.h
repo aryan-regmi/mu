@@ -6,31 +6,35 @@
 #include <type_traits>
 namespace mu {
 
-template <class T, class Item>
+template <class T>
 concept Iterable = requires(T self) {
-  { self._nextImpl() } -> std::same_as<Optional<Item>>;
+  { self._nextImpl() } -> std::same_as<Optional<typename T::Item>>;
 };
 
-template <class Context, class Item> class Iterator {
+template <class Context, class Item> struct Iterator {
   auto next() -> Optional<Item>
-    requires(Iterable<Context, Item>)
+    requires(Iterable<Context>)
   {
     Context* self = static_cast<Context*>(this);
-    self->_nextImpl();
+    return self->_nextImpl();
   }
 
   template <typename F>
   auto forEach(F&& func) -> void
     requires requires(F&& func, Item& item) {
-      requires(Iterable<Context, Item>);
       requires std::invocable<F, Item&>;
       { func(item) } -> std::same_as<void>;
     }
   {
-    Context* self = static_cast<Context*>(this);
-    for (Optional<Item>& item : self->next()) {
-      func(item);
+    Context*       self = static_cast<Context*>(this);
+    Optional<Item> item = self->next();
+    while (item.isValid()) {
+      func(item.unwrap());
+      item = self->next();
     }
+    // for (Optional<Item>& item : self->next()) {
+    //   func(item);
+    // }
   }
 };
 
