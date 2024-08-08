@@ -6,8 +6,9 @@
 #include "mu/optional.h"
 #include "mu/primitives.h" // usize, u8< u64
 #include <cstring>         // strlen
-#include <iostream>        // cout
-#include <ostream>         // endl
+#include <functional>
+#include <iostream> // cout
+#include <ostream>  // endl
 
 namespace mu {
 
@@ -27,21 +28,23 @@ concept HasDebugFn = requires(const T self) {
 /// from its neighbors.
 template <typename T> class Slice {
 public:
-  class Iter : public Iterator<Iter, T*> {
+  class Iter : public Iterator<Iter, T> {
   public:
     Iter() noexcept                             = delete;
     ~Iter() noexcept                            = default;
     Iter(const Iter& other) noexcept            = default;
     Iter& operator=(const Iter& other) noexcept = default;
 
-    using Item                                  = T*;
+    using Item                                  = T;
 
-    auto _nextImpl() -> Optional<Item> {
+    auto _nextImpl() -> Optional<std::reference_wrapper<Item>> {
       if (this->counter != this->slice->len()) {
+        T& val         = *(this->slice->ptr_ + this->counter);
         this->counter += 1;
-        return Optional<Item>(this->slice->ptr_ + (this->counter - 1));
+        return Optional<std::reference_wrapper<Item>>(
+            std::reference_wrapper(val));
       }
-      return Optional<Item>();
+      return Optional<std::reference_wrapper<Item>>();
     }
 
   private:

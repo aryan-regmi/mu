@@ -6,6 +6,7 @@
 #include "mu/primitives.h" // usize
 #include <algorithm>
 #include <concepts> // same_as
+#include <functional>
 #include <iostream>
 #include <tuple>
 
@@ -13,7 +14,9 @@ namespace mu {
 
 template <class T>
 concept Iterable = requires(T self) {
-  { self._nextImpl() } -> std::same_as<Optional<typename T::Item>>;
+  {
+    self._nextImpl()
+  } -> std::same_as<Optional<std::reference_wrapper<typename T::Item>>>;
 };
 
 template <class Context, class Item> struct Iterator;
@@ -28,13 +31,13 @@ public:
     requires(Iterable<Context>)
       : it{iter} {}
 
-  auto _nextImpl() -> Optional<Item> {
-    Optional<Item> item = std::move(this->it->next());
+  auto _nextImpl() -> Optional<std::reference_wrapper<Item>> {
+    Optional<std::reference_wrapper<Item>> item = this->it->next();
     if (item.isValid()) {
       this->count += 1;
-      return Optional<Item>({this->count - 1, item});
+      return Optional<std::reference_wrapper<Item>>({this->count - 1, item});
     }
-    return Optional<Item>();
+    return Optional<std::reference_wrapper<Item>>();
   }
 
 private:
@@ -51,16 +54,17 @@ public:
     requires(Iterable<Context> && Cloneable<Item>)
       : it{iter} {}
 
-  auto _nextImpl() -> Optional<Item> {
-    Optional<Item> item = std::move(this->it->next());
+  auto _nextImpl() -> Optional<std::reference_wrapper<Item>> {
+    Optional<std::reference_wrapper<Item>> item = this->it->next();
     if (item.isValid()) {
       if constexpr (Copyable<Item>) {
-        return Optional<Item>{std::move(item.unwrap())};
+        return Optional<std::reference_wrapper<Item>>{std::move(item.unwrap())};
       } else if constexpr (Cloneable<Item>) {
-        return Optional<Item>{std::move(item.unwrap().clone())};
+        return Optional<std::reference_wrapper<Item>>{
+            std::move(item.unwrap().clone())};
       }
     }
-    return item;
+    return Optional<std::reference_wrapper<Item>>();
   }
 
 private:
@@ -68,7 +72,7 @@ private:
 };
 
 template <class Context, class Item> struct Iterator {
-  auto next() -> Optional<Item>
+  auto next() -> Optional<std::reference_wrapper<Item>>
     requires(Iterable<Context>)
   {
     Context* self = static_cast<Context*>(this);
@@ -83,8 +87,8 @@ template <class Context, class Item> struct Iterator {
       { func(item) } -> std::same_as<void>;
     }
   {
-    Context*       self = static_cast<Context*>(this);
-    Optional<Item> item = std::move(self->next());
+    Context*                               self = static_cast<Context*>(this);
+    Optional<std::reference_wrapper<Item>> item = self->next();
     while (item.isValid()) {
       func(item.unwrap());
       item = self->next();
@@ -104,6 +108,13 @@ template <class Context, class Item> struct Iterator {
     Context* self = static_cast<Context*>(this);
     return Cloned<Context, Item>(self);
   }
+
+  // TODO: Implement Container and collect()
+  //
+  // template<Container C> auto collect() -> C {
+  //
+  // }
+  // auto collect()
 };
 
 } // namespace mu

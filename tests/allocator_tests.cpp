@@ -69,14 +69,13 @@ int main(void) {
     // dbg(val);
     auto it1 = val.iter();
     auto it2 = val.iter();
-    // auto it3 = it1.cloned();
     auto it3 = val.iter().cloned();
     it1.forEach([](auto v) {
-      dbg(*v);
-      *v += 1;
+      dbg(v);
+      v += 1;
+      dbg(v);
     });
-    it2.forEach([](auto v) { dbg(*v); });
-    it3.forEach([](auto v) { dbg(*v); });
+    it2.forEach([](auto v) { dbg(v); });
 
     // Testing slice
     try {
