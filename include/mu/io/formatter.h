@@ -29,6 +29,8 @@ public:
     }
   }
 
+  auto setPadding(usize padding) -> void { this->padding = padding; }
+
   auto write(Slice<u8> buf) -> usize override {
     this->pad();
     return this->writer.write(buf);
@@ -57,6 +59,8 @@ public:
     }
   }
 
+  auto setPadding(usize padding) -> void { this->padding = padding; }
+
   auto write(Slice<u8> buf) -> usize override {
     this->pad();
     return this->writer.write(buf);
@@ -84,6 +88,8 @@ public:
       assert(written == 1);
     }
   }
+
+  auto setPadding(usize padding) -> void { this->padding = padding; }
 
   auto write(Slice<u8> buf) -> usize override {
     this->pad();

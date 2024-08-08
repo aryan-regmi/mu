@@ -1,6 +1,5 @@
 #include "mu/common.h"
 #include "mu/debuggable.h"
-#include "mu/io/writer.h"
 #include "mu/mem/c_allocator.h"
 #include "mu/primitives.h"
 #include "mu/slice.h"
