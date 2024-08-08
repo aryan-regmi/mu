@@ -1,6 +1,5 @@
 #include "mu/common.h"
 #include "mu/debuggable.h"
-#include "mu/io/writer.h"
 #include "mu/mem/c_allocator.h"
 #include "mu/primitives.h"
 #include "mu/slice.h"
@@ -17,8 +16,8 @@ struct Tst {
 };
 
 struct Dbgl : Debug<Dbgl> {
-  auto writeFmt(io::Writer& writer) const -> void {
-    writer.format("Dbgl { val = %d }", this->val);
+  auto writeFmt(io::Formatter<io::Stdout>& fmt) const -> void {
+    fmt.format("Dbgl { val = %d }", this->val);
   }
 
   static constexpr const usize NUM = 42;
@@ -62,6 +61,7 @@ int main(void) {
       val[0] = 1;
       val[1] = 2;
       dbg(val);
+      dbg(val[0]);
       assert(val[0] == 1);         // Doesn't throw
       assert(val[1] == 2);         // Doesn't throw
       printf("Error: %d", val[3]); // Throws error

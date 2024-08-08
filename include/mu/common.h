@@ -15,7 +15,7 @@ namespace mu::common {
 // TODO: Put all common exceptions here!
 
 /// The exception thrown if an allocation failed.
-class OutOfMemoryException : std::exception {
+struct OutOfMemoryException : public std::exception {
   explicit OutOfMemoryException(usize allocation_size)
       : allocation_size{allocation_size} {}
 
@@ -29,25 +29,25 @@ private:
 };
 
 /// The exception thrown if `unwrap` is called on an empty `Optional`.
-struct OptionUnwrapException : std::exception {
+struct OptionUnwrapException : public std::exception {
   /// Explains the error.
   auto what() const throw() -> const_cstr override;
 };
 
 /// The exception thrown if `unwrap` is called on an `Err`.
-struct ResultUnwrapErrException : std::exception {
+struct ResultUnwrapErrException : public std::exception {
   /// Explains the error.
   auto what() const throw() -> const_cstr override;
 };
 
 /// The exception thrown if `unwrapErr` is called on an `Ok`.
-struct ResultUnwrapOkException : std::exception {
+struct ResultUnwrapOkException : public std::exception {
   /// Explains the error.
   auto what() const throw() -> const_cstr override;
 };
 
 /// Index out of bounds exception.
-struct IndexOutOfBounds : std::exception {
+struct IndexOutOfBounds : public std::exception {
   explicit IndexOutOfBounds(usize idx, usize len) : idx{idx}, len{len} {}
 
   /// Explains the error.
