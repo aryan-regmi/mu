@@ -15,7 +15,7 @@ namespace mu {
 
 /// An optional type that represents either a value of type `T` or an empty
 /// value.
-template <class T> class Optional : Clone<Optional<T>> {
+template <class T> class Optional : public Clone<Optional<T>> {
 public:
   Optional(const Optional&) noexcept
     requires(Copyable<T>)
@@ -354,11 +354,8 @@ public:
     return Optional<U>();
   }
 
-private:
-  std::variant<std::monostate, T> val;
-
   /// Clones the contained value.
-  auto                            cloneImpl() const noexcept -> Optional<T>
+  auto _cloneImpl() const noexcept -> Optional<T>
     requires(Cloneable<T>)
   {
     if (!this->isValid()) {
@@ -372,6 +369,9 @@ private:
       return Optional(val.clone());
     }
   }
+
+private:
+  std::variant<std::monostate, T> val;
 };
 
 } // namespace mu

@@ -1,3 +1,4 @@
+#include "mu/cloneable.h"
 #include "mu/common.h"
 #include "mu/debuggable.h"
 #include "mu/mem/c_allocator.h"
@@ -5,6 +6,7 @@
 #include "mu/slice.h"
 #include <cassert>
 #include <cstdio>
+#include <tuple>
 
 using namespace mu;
 
@@ -53,15 +55,33 @@ int main(void) {
     u8*          alloced   = aligned - *offset;
     assert((reinterpret_cast<u8*>(val.ptr()) - alloced) == alignment);
 
-    auto xxx = Dbgl{};
-    dbg(xxx);
+    // auto xxx = Dbgl{};
+    // dbg(xxx);
+    //
+    // val.iter().enumerate().forEach([](auto v) {
+    //   int            count;
+    //   Optional<int*> val;
+    //   std::tie(count, val) = v;
+    //   dbg(count);
+    //   dbg(*val.unwrap());
+    // });
+    //
+    // dbg(val);
+    auto it1 = val.iter();
+    auto it2 = val.iter();
+    // auto it3 = it1.cloned();
+    auto it3 = val.iter().cloned();
+    it1.forEach([](auto v) {
+      dbg(*v);
+      *v += 1;
+    });
+    it2.forEach([](auto v) { dbg(*v); });
+    it3.forEach([](auto v) { dbg(*v); });
 
     // Testing slice
     try {
       val[0] = 1;
       val[1] = 2;
-      dbg(val);
-      dbg(val[0]);
       assert(val[0] == 1);         // Doesn't throw
       assert(val[1] == 2);         // Doesn't throw
       printf("Error: %d", val[3]); // Throws error
