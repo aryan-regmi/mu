@@ -15,6 +15,10 @@ concept HasDebugFn = requires(const T self) {
 };
 } // namespace internal::helper
 
+// TODO: Add template specialization for make Slice<u8> from const_cstr
+//
+// TODO: Add Iterator mixin!
+
 /// A dynamically-sized view into a contiguous sequence, [T]. Contiguous here
 /// means that elements are laid out so that every element is the same distance
 /// from its neighbors.
@@ -61,6 +65,8 @@ public:
     std::cout << "Slice {" << std::endl;
     std::cout << "\tptr: " << this->ptr_ << std::endl;
     std::cout << "\tlen: " << this->len_ << std::endl;
+    // TODO: Add `elements` method to get the elements of the slice
+    //  - The debug function doesn't print the elements itself!
     std::cout << "\telements: [ ";
     for (usize i = 0; i < this->len_; i++) {
       if constexpr (internal::helper::HasDebugFn<T>) {

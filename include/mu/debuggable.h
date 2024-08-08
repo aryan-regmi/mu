@@ -67,6 +67,8 @@ auto dbg(int                  val,
 auto dbg(f64                  val,
          std::source_location loc = std::source_location::current()) -> void;
 
+// TODO: Add `dbg` for arrays!
+
 } // namespace mu
 
 #endif // !MU_DEBUGGABLE_H

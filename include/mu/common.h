@@ -7,6 +7,8 @@
 // TODO: Make **all** constructor calls consistent (use brace-initialization)
 //
 // TODO: Put all exception impls in cpp file!
+//
+// TODO: Make sure `rule of 5` is taken into account for everything
 
 namespace mu::common {
 

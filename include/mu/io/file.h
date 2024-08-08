@@ -9,6 +9,8 @@
 
 namespace mu::io {
 
+// TODO: Move to common.h
+//
 /// File not found.
 class FileNotFound : std::exception {
 public:
