@@ -41,10 +41,19 @@ template <class Context> struct Debug {
     requires(Debuggable<Context>)
   {
     const Context* self = static_cast<const Context*>(this);
-    auto writer = io::ThreadSafeWriter<io::Formatter<io::Stdout>>::fromRaw(fmt);
-    self->writeFmt(writer);
+    self->writeFmt(fmt);
   }
 };
+
+/// Debugs type `Slice<T>` by calling its `debug()` method.
+template <class T>
+auto dbg(Slice<T>             val,
+         std::source_location loc = std::source_location::current()) -> void {
+  std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
+            << loc.column() << "] = ";
+  val.debug();
+  std::cout << std::endl;
+}
 
 /// Debugs type `T` by calling its `debug()` method.
 template <class T>
@@ -54,7 +63,8 @@ auto dbg(T                    val,
 {
   std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
             << loc.column() << "] = ";
-  val.debug();
+  io::Formatter<io::Stdout> fmt{};
+  val.debug(fmt);
   std::cout << std::endl;
 }
 

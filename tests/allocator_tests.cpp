@@ -17,8 +17,8 @@ struct Tst {
 };
 
 struct Dbgl : Debug<Dbgl> {
-  auto writeFmt(io::Writer& writer) const -> void {
-    writer.format("Dbgl { val = %d }", this->val);
+  auto writeFmt(io::Formatter<io::Stdout>& fmt) const -> void {
+    fmt.format("Dbgl { val = %d }", this->val);
   }
 
   static constexpr const usize NUM = 42;

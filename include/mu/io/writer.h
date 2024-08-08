@@ -31,8 +31,7 @@ public:
   /// Write the object into this writer.
   template <typename T>
   auto writeObject(T obj, usize bytesize = sizeof(T)) -> void {
-    u8* bytes = reinterpret_cast<u8*>(reinterpret_cast<char*>(&obj));
-    this->writeAll(Slice(bytes, bytesize));
+    this->writeAll(Slice(&obj, bytesize));
   }
 
   /// Write the object into this writer, with the endianness specified in the
@@ -68,11 +67,7 @@ public:
   /// ## Note
   /// This does **not** initialize the `writer` in a thread-safe way; the caller
   /// is responsible for doing so.
-  static auto fromRaw(T writer) -> ThreadSafeWriter {
-    ThreadSafeWriter ts_writer{};
-    ts_writer.writer = std::move(writer);
-    return ts_writer;
-  }
+  ThreadSafeWriter(T&& writer) : writer{std::move(writer)} {}
 
   /// Creates a `ThreadSafeWriter` by initializing the `writer` in a thread-safe
   /// manner.
@@ -90,14 +85,14 @@ public:
     return written;
   }
 
-private:
-  std::mutex mutex;
-  T          writer;
-
-  auto       formatV(const_cstr fmt, va_list args) -> void override {
+  auto formatV(const_cstr fmt, va_list args) -> void override {
     const std::lock_guard<std::mutex> lock(this->mutex);
     this->writer.formatV(fmt, args);
   }
+
+private:
+  std::mutex mutex;
+  T          writer;
 };
 
 } // namespace mu::io
