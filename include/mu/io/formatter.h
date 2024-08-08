@@ -9,22 +9,19 @@ namespace mu::io {
 template <Writeable T> class Formatter : public Writer {
   Formatter() = default;
 
-  static auto fromRaw(T writer, usize padding = 1) -> Formatter {
+  static auto fromRaw(T writer, usize padding = 0) -> Formatter {
     Formatter fmt{};
     fmt.writer  = writer;
     fmt.padding = padding;
   }
 
   template <typename... Args>
-  explicit Formatter(usize padding = 1, Args... args)
+  explicit Formatter(usize padding = 0, Args... args)
       : writer{std::forward<Args>(args)...}, padding{padding} {}
 
   auto pad() -> void {
-    const_cstr tab    = "\t";
-    const u8*  tab_u8 = reinterpret_cast<const u8*>(tab);
-    Slice<u8>  buf    = Slice(const_cast<u8*>(tab_u8), 1);
     for (usize i = 0; i < this->padding; i++) {
-      this->writer.write(buf);
+      this->writer.write(Slice<u8>("\t"));
     }
   }
 
