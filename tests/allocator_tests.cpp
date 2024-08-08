@@ -61,6 +61,7 @@ int main(void) {
       val[0] = 1;
       val[1] = 2;
       dbg(val);
+      dbg(val[0]);
       assert(val[0] == 1);         // Doesn't throw
       assert(val[1] == 2);         // Doesn't throw
       printf("Error: %d", val[3]); // Throws error

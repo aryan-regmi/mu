@@ -45,6 +45,8 @@ template <class Context> struct Debug {
   }
 };
 
+// TODO: Stringify first parameter into `dbg` and print that too!
+
 /// Debugs type `Slice<T>` by calling its `debug()` method.
 template <class T>
 auto dbg(Slice<T>             val,
@@ -61,11 +63,10 @@ auto dbg(T                    val,
          std::source_location loc = std::source_location::current()) -> void
   requires(HasDebugFn<T>)
 {
-  std::cout << "[" << loc.file_name() << ":" << loc.line() << ":"
-            << loc.column() << "] = ";
   io::Formatter<io::Stdout> fmt{};
+  fmt.format("[%s:%zu:%zu] = ", loc.file_name(), loc.line(), loc.column());
   val.debug(fmt);
-  std::cout << std::endl;
+  fmt.write(Slice<u8>("\n"));
 }
 
 /// Debugs a `u8` value.
