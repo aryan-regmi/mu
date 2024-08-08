@@ -28,7 +28,7 @@ public:
 
   auto write(Slice<u8> buf) -> usize override {
     this->pad();
-    this->writer.write(buf);
+    return this->writer.write(buf);
   }
 
   auto formatV(const_cstr fmt, va_list args) -> void override {

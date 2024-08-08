@@ -74,14 +74,65 @@ private:
   u8  align_ : 8;
 };
 
+// TODO: Add specialization for Slice<cstr> and Slice<const_cstr>
+
+// TODO: Add conversion methods from Slice<cstr> and Slice<const_cstr>
 template <> class Slice<u8> {
 public:
+  explicit Slice() noexcept                     = default;
+  ~Slice() noexcept                             = default;
+  Slice(const Slice& other) noexcept            = default;
+  Slice& operator=(const Slice& other) noexcept = default;
+
   explicit Slice(const_cstr str)
       : ptr_{const_cast<cstr>(str)}, len_{strlen(str)},
         align_{alignof(const_cstr)} {}
 
   explicit Slice(cstr str)
       : ptr_{str}, len_{strlen(str)}, align_{alignof(cstr)} {}
+
+  Slice(const Slice<cstr>& other) noexcept
+      : ptr_{*other.ptr()}, len_{other.len()}, align_{other.align()} {}
+
+  Slice(const Slice<const_cstr>& other) noexcept
+      : ptr_{const_cast<cstr>(*other.ptr())}, len_{other.len()},
+        align_{other.align()} {}
+
+  Slice& operator=(const Slice<cstr>& other) noexcept {
+    if ((this->ptr_ == *other.ptr()) && (this->len_ == other.len()) &&
+        (this->align_ == other.align())) {
+      return *this;
+    }
+
+    this->ptr_   = *other.ptr();
+    this->len_   = other.len();
+    this->align_ = other.align();
+    return *this;
+  }
+
+  Slice& operator=(const Slice<const_cstr>& other) noexcept {
+    if ((this->ptr_ == *other.ptr()) && (this->len_ == other.len()) &&
+        (this->align_ == other.align())) {
+      return *this;
+    }
+
+    this->ptr_   = const_cast<cstr>(*other.ptr());
+    this->len_   = other.len();
+    this->align_ = other.align();
+    return *this;
+  }
+
+  Slice& operator=(const Slice<char>& other) noexcept {
+    if ((this->ptr_ == other.ptr()) && (this->len_ == other.len()) &&
+        (this->align_ == other.align())) {
+      return *this;
+    }
+
+    this->ptr_   = other.ptr();
+    this->len_   = other.len();
+    this->align_ = other.align();
+    return *this;
+  }
 
   /// Returns the number of elements in the slice.
   inline auto len() const noexcept -> usize { return this->len_; }

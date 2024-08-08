@@ -41,7 +41,7 @@ template <class Context> struct Debug {
     requires(Debuggable<Context>)
   {
     const Context* self = static_cast<const Context*>(this);
-    auto writer         = io::ThreadSafeWriter<io::Formatter<io::Stdout>>(fmt);
+    auto writer = io::ThreadSafeWriter<io::Formatter<io::Stdout>>::fromRaw(fmt);
     self->writeFmt(writer);
   }
 };
