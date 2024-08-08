@@ -3,7 +3,6 @@
 
 #include "mu/io/file.h"      // Stdout
 #include "mu/io/formatter.h" // Formatter
-#include "mu/io/writer.h"    // Writer
 #include "mu/primitives.h"   // f64, u8, const_cstr
 #include <cassert>           // assert
 #include <concepts>          // same_as

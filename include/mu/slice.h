@@ -74,9 +74,6 @@ private:
   u8  align_ : 8;
 };
 
-// TODO: Add specialization for Slice<cstr> and Slice<const_cstr>
-
-// TODO: Add conversion methods from Slice<cstr> and Slice<const_cstr>
 template <> class Slice<u8> {
 public:
   explicit Slice() noexcept                     = default;
@@ -97,6 +94,9 @@ public:
   Slice(const Slice<const_cstr>& other) noexcept
       : ptr_{const_cast<cstr>(*other.ptr())}, len_{other.len()},
         align_{other.align()} {}
+
+  Slice(const Slice<char>& other) noexcept
+      : ptr_{other.ptr()}, len_{other.len()}, align_{other.align()} {}
 
   Slice& operator=(const Slice<cstr>& other) noexcept {
     if ((this->ptr_ == *other.ptr()) && (this->len_ == other.len()) &&
