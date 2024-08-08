@@ -7,6 +7,7 @@
 namespace mu::io {
 
 template <Writeable T> class Formatter : public Writer {
+public:
   Formatter() = default;
 
   static auto fromRaw(T writer, usize padding = 0) -> Formatter {
@@ -30,14 +31,14 @@ template <Writeable T> class Formatter : public Writer {
     this->writer.write(buf);
   }
 
-private:
-  T     writer;
-  usize padding;
-
-  auto  formatV(const_cstr fmt, va_list args) -> void override {
+  auto formatV(const_cstr fmt, va_list args) -> void override {
     this->pad();
     this->writer.formatV(fmt, args);
   }
+
+private:
+  T     writer;
+  usize padding;
 };
 
 } // namespace mu::io
